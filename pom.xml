@@ -81,6 +81,15 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- FLYWAY -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>10.21.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+
     </dependencies>
 
 </project>
