@@ -1,0 +1,33 @@
+spring:
+  # --- CẤU HÌNH FLYWAY ---
+  flyway:
+    enabled: true
+    # Cho phép chạy các file migration có version thấp hơn version hiện tại của DB (Giải quyết conflict khi merge code nhóm)
+    out-of-order: true
+    # Tự động tạo baseline nếu database đã có sẵn các bảng (Rất quan trọng nếu DB của bạn đã có table trước khi dùng Flyway)
+    baseline-on-migrate: true
+    baseline-version: "0" # Đặt phiên bản gốc là 0
+    # Thư mục chứa các file SQL migration
+    locations: classpath:db/migration
+    # Tên bảng lưu lịch sử chạy migration trên PostgreSQL
+    table: flyway_schema_history
+  # -----------------------
+
+  datasource:
+    url: jdbc:postgresql://172.16.16.50:5432/tft_db
+    username: postgres
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
