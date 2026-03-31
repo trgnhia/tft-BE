@@ -22,7 +22,7 @@ spring:
     enabled: true
       # Cho phép chạy các file migration có version thấp hơn version hiện tại của DB (Giải quyết conflict khi merge code nhóm)
     out-of-order: true
-      # Tự động tạo baseline nếu database đã có sẵn các bảng (Rất quan trọng nếu DB của bạn đã có table trước khi dùng Flyway)
+      # Tự động tạo baseline nếu database đã có sẵn các bảng
     baseline-on-migrate: true
     baseline-version: "0" # Đặt phiên bản gốc là 0
       # Thư mục chứa các file SQL migration
