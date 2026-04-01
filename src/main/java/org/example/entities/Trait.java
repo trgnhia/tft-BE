@@ -17,8 +17,6 @@ import java.util.List;
 @Table(name = "traits")
 @Getter
 @Setter
-@FilterDef(name = "deletedFilter", parameters = @ParamDef(name = "deleted", type = Boolean.class))
-@Filter(name = "deletedFilter", condition = "deleted = :deleted")
 @SQLDelete(sql = "UPDATE traits SET deleted = true WHERE id = ?")
 public class Trait extends AuditableEntity {
     @Column(name = "set_id", nullable = false)

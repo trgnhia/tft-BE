@@ -15,7 +15,7 @@ public interface TraitRepository extends JpaRepository<Trait, Long> {
     Optional<Trait> findBySlug(String slug);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
-    Page<Trait> findByNameContainingIgnoreCase(String keyword, Pageable pageable);
-    List<Trait> findBySets_Id(Long setId);
+    Page<Trait> findBySlugContainingIgnoreCase(String keyword, Pageable pageable);
+    List<Trait> findBySetId(Long setId);
     List<Trait> findByType(String type);
 }
