@@ -1,10 +1,10 @@
-package org.example.common.entity;
+package org.example.entity;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.example.common.entity.AuditableEntity;
 
 import java.time.Instant;
 
@@ -12,7 +12,7 @@ import java.time.Instant;
 @Table(name = "users")
 @Getter
 @Setter
-public class User extends AuditableEntity{
+public class User extends AuditableEntity {
     private String username;
     private String email;
     private String passwordHash;
