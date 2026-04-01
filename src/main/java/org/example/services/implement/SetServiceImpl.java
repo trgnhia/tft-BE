@@ -37,7 +37,11 @@ public class SetServiceImpl implements SetService {
            throw new ConflictException("Set name already exists");
        }
 
-       return null;
+       Set set = new Set();
+       set.setName(request.getName().trim());
+       set.setActive(request.getIsActive() != null ? request.getIsActive() : true);
+       Set savedSet = setRepo.save(set);
+       return setMapper.toSetResponse(savedSet);
     }
 
     @Override
