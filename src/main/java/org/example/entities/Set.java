@@ -14,8 +14,8 @@ import org.example.common.entity.AuditableEntity;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Set extends AuditableEntity {
-    @Column(name = "is_active")
+    @Column(name = "is_active", nullable = false)
     private boolean isActive;
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 }
