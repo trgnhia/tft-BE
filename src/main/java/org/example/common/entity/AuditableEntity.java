@@ -35,4 +35,8 @@ public abstract class AuditableEntity extends BaseEntity {
     @Column(name = "updated_by")
     @LastModifiedBy
     private Long updatedBy;
+
+
+    @Column(nullable = false, name = "deleted")
+    private boolean deleted = false;
 }
