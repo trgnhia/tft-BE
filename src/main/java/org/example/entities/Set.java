@@ -1,11 +1,10 @@
-package org.example.entity;
+package org.example.entities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.catalina.User;
 import org.example.common.entity.AuditableEntity;
 
 @Entity
@@ -19,7 +18,7 @@ public class Set extends AuditableEntity {
     private boolean isActive;
     @Column(nullable = false)
     private String name;
-    //@ManyToOne(fetch = FetchType.LAZY)
-    @Column(nullable = false, name = "created_by")
-    private Long createdBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false, name = "created_by")
+    private User createdBy;
 }
