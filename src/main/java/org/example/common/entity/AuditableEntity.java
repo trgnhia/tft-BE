@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
+
 @Getter
 @Setter
 @MappedSuperclass
@@ -34,6 +35,7 @@ public abstract class AuditableEntity extends BaseEntity {
     @Column(name = "updated_by")
     @LastModifiedBy
     private Long updatedBy;
+
 
     @Column(nullable = false, name = "deleted")
     private boolean deleted = false;
