@@ -18,7 +18,4 @@ public class Set extends AuditableEntity {
     private boolean isActive;
     @Column(nullable = false)
     private String name;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false, name = "created_by")
-    private User createdBy;
 }

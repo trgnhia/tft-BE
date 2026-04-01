@@ -36,7 +36,6 @@ public abstract class AuditableEntity extends BaseEntity {
     @LastModifiedBy
     private Long updatedBy;
 
-
     @Column(nullable = false, name = "deleted")
     private boolean deleted = false;
 }
