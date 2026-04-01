@@ -7,16 +7,18 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
 
 @Slf4j
+@Component
 public class JwtUtil {
-    @Value("${security.jwt.secret-key}")
+    @Value(value = "${spring.security.jwt.secret-key}")
     private String jwtSecret;
-    @Value("${security.jwt.expiration-ms}")
+    @Value(value = "${spring.security.jwt.expiration-ms}")
     private long expirationMs;
     private SecretKey secretKey;
 
