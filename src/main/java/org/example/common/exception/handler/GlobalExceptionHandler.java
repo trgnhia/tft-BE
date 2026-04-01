@@ -2,6 +2,7 @@ package org.example.common.exception.handler;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
