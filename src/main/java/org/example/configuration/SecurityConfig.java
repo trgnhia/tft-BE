@@ -2,6 +2,7 @@ package org.example.configuration;
 
 import lombok.RequiredArgsConstructor;
 import org.example.security.JwtAuthFilter;
+import org.example.services.implement.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +13,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -31,15 +31,13 @@ import java.util.List;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final UserDetailsService userDetailsService;
+    private final CustomUserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
     @Value("${server.servlet.context-path}")
     private String apiPrefix;
 
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/v1/auth/signin",
-            "/api/v1/auth/signup",
-            "/api/v1/auth/refresh",
+            "/api/v1/auth/**",
             "/api/v1/swagger-resources",
             "/api/v1/swagger-resources/**",
     };
@@ -57,7 +55,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                                 .anyRequest()
-                                .authenticated())
+                                .hasRole("USER"))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authenticationProvider(authenticationProvider());
 
