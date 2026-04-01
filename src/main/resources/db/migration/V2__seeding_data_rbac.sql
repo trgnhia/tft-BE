@@ -1,9 +1,12 @@
+-- roles
 insert into roles (code, name, description)
 values
     ('ADMIN', 'Administrator', 'Full system access'),
     ('EDITOR', 'Editor', 'Can manage content'),
-    ('USER', 'User', 'Basic access');
+    ('USER', 'User', 'Basic access')
+    on conflict (code) do nothing;
 
+-- permissions
 insert into permissions (code, name, description)
 values
     ('USER_READ', 'Read users', 'View user information'),
@@ -12,8 +15,10 @@ values
     ('USER_DELETE', 'Delete users', 'Delete users'),
     ('ROLE_READ', 'Read roles', 'View roles'),
     ('ROLE_UPDATE', 'Update roles', 'Update roles'),
-    ('PERMISSION_READ', 'Read permissions', 'View permissions');
+    ('PERMISSION_READ', 'Read permissions', 'View permissions')
+    on conflict (code) do nothing;
 
+-- role_permissions for admin
 insert into role_permissions (role_id, permission_id)
 select r.id, p.id
 from roles r
@@ -26,8 +31,10 @@ from roles r
                                           'ROLE_UPDATE',
                                           'PERMISSION_READ'
     )
-where r.code = 'ADMIN';
+where r.code = 'ADMIN'
+    on conflict (role_id, permission_id) do nothing;
 
+-- role_permissions for editor
 insert into role_permissions (role_id, permission_id)
 select r.id, p.id
 from roles r
@@ -37,16 +44,20 @@ from roles r
                                           'ROLE_READ',
                                           'PERMISSION_READ'
     )
-where r.code = 'EDITOR';
+where r.code = 'EDITOR'
+    on conflict (role_id, permission_id) do nothing;
 
+-- role_permissions for user
 insert into role_permissions (role_id, permission_id)
 select r.id, p.id
 from roles r
          join permissions p on p.code in (
     'USER_READ'
     )
-where r.code = 'USER';
+where r.code = 'USER'
+    on conflict (role_id, permission_id) do nothing;
 
+-- admin user
 insert into users (username, email, password_hash, enabled, role_id)
 select
     'admin',
@@ -55,4 +66,5 @@ select
     true,
     r.id
 from roles r
-where r.code = 'ADMIN';
+where r.code = 'ADMIN'
+    on conflict (email) do nothing;
