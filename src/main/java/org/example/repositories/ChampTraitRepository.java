@@ -1,4 +1,4 @@
-package org.example.repository;
+package org.example.repositories;
 
 import org.example.entities.ChampTrait;
 import org.springframework.data.jpa.repository.JpaRepository;
