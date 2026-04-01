@@ -16,6 +16,8 @@ import java.util.Set;
 @Getter
 @Setter
 public class Permission extends AuditableEntity {
+    @Column(name = "code", nullable = false, unique = true, length = 50)
+    private String code;
     @Column(name = "name")
     private String name;
     @Column(name = "description")

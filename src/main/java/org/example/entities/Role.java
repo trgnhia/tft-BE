@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.common.entity.AuditableEntity;
-import org.example.common.enums.RoleName;
+import org.example.common.enums.RoleCode;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,9 +14,11 @@ import java.util.Set;
 @Getter
 @Setter
 public class Role extends AuditableEntity {
-    @Column(name = "name", nullable = false, unique = true, length = 50)
+    @Column(name = "code", nullable = false, unique = true, length = 50)
     @Enumerated(EnumType.STRING)
-    private RoleName name;
+    private RoleCode code;
+    @Column(name = "name", nullable = false, unique = true)
+    private String name;
     @Column(name = "description")
     private String description;
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)

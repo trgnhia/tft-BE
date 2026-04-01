@@ -1,5 +1,5 @@
 package org.example.common.enums;
 
-public enum RoleName {
-    USER,ADMIN,MANAGER
+public enum RoleCode {
+    USER, ADMIN, EDITOR
 }
