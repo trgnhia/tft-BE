@@ -16,9 +16,9 @@ import java.util.Date;
 @Slf4j
 @Component
 public class JwtUtil {
-    @Value("${security.jwt.secret-key}")
+    @Value(value = "${spring.security.jwt.secret-key}")
     private String jwtSecret;
-    @Value("${security.jwt.expiration-ms}")
+    @Value(value = "${spring.security.jwt.expiration-ms}")
     private long expirationMs;
     private SecretKey secretKey;
 
