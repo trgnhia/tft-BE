@@ -5,8 +5,10 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.example.configuration.SecurityProperties;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -15,26 +17,32 @@ import java.util.Date;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
-    @Value(value = "${spring.security.jwt.secret-key}")
-    private String jwtSecret;
-    @Value(value = "${spring.security.jwt.expiration-ms}")
-    private long expirationMs;
+    private final SecurityProperties securityProperties;
     private SecretKey secretKey;
 
     private SecretKey getSigningKey() {
         if (secretKey == null) {
-            secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(jwtSecret));
+            secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(securityProperties.getJwtSecretKey()));
         }
         return secretKey;
     }
 
-    public String generateToken(String username) {
-        Instant now = Instant.now();
+    public String generateAccessToken(UserDetails userDetails, Instant instant) {
         return Jwts.builder()
-                .subject(username)
-                .expiration(Date.from(now.plusMillis(expirationMs)))
-                .issuedAt(Date.from(now))
+                .subject(userDetails.getUsername())
+                .expiration(Date.from(instant.plusMillis(securityProperties.getAccessTokenExpirationMs())))
+                .issuedAt(Date.from(instant))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String generateRefreshToken(UserDetails userDetails, Instant instant) {
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .expiration(Date.from(instant.plusMillis(securityProperties.getRefreshTokenExpirationMs())))
+                .issuedAt(Date.from(instant))
                 .signWith(getSigningKey())
                 .compact();
     }
