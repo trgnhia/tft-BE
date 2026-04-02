@@ -1,4 +1,9 @@
 package org.example.repositories;
 
-public interface TeamCompRepository {
+import org.example.entities.TeamComp;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface TeamCompRepository extends JpaRepository<TeamComp, Long> {
 }
