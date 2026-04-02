@@ -22,4 +22,10 @@ public class SetsController {
         SetsResponse response = setsService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SetsResponse> getSetById (@PathVariable Long id) {
+        SetsResponse response = setsService.getSetById(id);
+        return ResponseEntity.ok(response);
+    }
 }

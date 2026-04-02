@@ -3,7 +3,8 @@ package org.example.core.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import org.example.common.constant.Constants;
-
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
