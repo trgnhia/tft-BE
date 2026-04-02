@@ -12,9 +12,8 @@ import java.time.Instant;
 public class SetsResponse {
     private Long id;
     private String name;
-    private Boolean isActive;
+    private boolean active;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdByName;
-
 }
