@@ -8,8 +8,7 @@ import org.example.common.constant.Constants;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
+
 public class ApiResponse<T> {
     private boolean success;
     private Object message;
