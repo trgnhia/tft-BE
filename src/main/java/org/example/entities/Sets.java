@@ -1,10 +1,7 @@
 package org.example.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.example.common.entity.AuditableEntity;
 
 @Entity
@@ -13,9 +10,13 @@ import org.example.common.entity.AuditableEntity;
 @Table(name = "set")
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Sets extends AuditableEntity {
     @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    private boolean active;
     @Column(nullable = false, length = 100)
     private String name;
+    @ManyToOne (fetch = FetchType.LAZY)
+    @JoinColumn (name = "created_by", insertable = false, updatable = false)
+    private User createdByUser;
 }

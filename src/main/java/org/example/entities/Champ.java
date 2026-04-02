@@ -5,6 +5,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Table;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.example.common.entity.AuditableEntity;
 import org.hibernate.annotations.*;
 
@@ -15,9 +16,9 @@ import java.util.List;
 @Table(name = "champs")
 @Getter
 @Setter
-@AllArgsConstructor
+@SuperBuilder
 @NoArgsConstructor
-@Builder
+@AllArgsConstructor
 @SQLDelete(sql = "UPDATE champs SET deleted = true WHERE id = ?")
 @FilterDef(name = "deletedFilter", parameters = @ParamDef(name = "deleted", type = Boolean.class))
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
@@ -38,6 +39,9 @@ public class Champ extends AuditableEntity {
 
     @Column(name = "stats", columnDefinition = "json")
     private String stats;
+
+    @Column(name = "cost", nullable = false)
+    private Integer cost;
 
     @OneToMany(mappedBy = "champ", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<ChampTrait> champTraits = new ArrayList<>();
