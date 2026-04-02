@@ -22,6 +22,16 @@ public class TeamCompChamp {
     @Column(name = "champion_id")
     private Long championId;
 
+    // Liên kết với bảng team_comp
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "temp_comp_id", insertable = false, updatable = false)
+    private TeamComp teamComp;
+
+    // Liên kết với bảng champs
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "champion_id", insertable = false, updatable = false)
+    private Champ champ;
+
     // Định nghĩa Composite Primary Key Class
     @Getter
     @Setter
