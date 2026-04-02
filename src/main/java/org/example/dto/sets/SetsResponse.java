@@ -1,9 +1,6 @@
-package org.example.dto.set;
+package org.example.dto.sets;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -11,7 +8,8 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SetResponse {
+@Builder
+public class SetsResponse {
     private Long id;
     private String name;
     private Boolean isActive;

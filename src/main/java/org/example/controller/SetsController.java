@@ -1,9 +1,9 @@
 package org.example.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.example.dto.set.SetRequest;
-import org.example.dto.set.SetResponse;
-import org.example.services.SetService;
+import org.example.dto.sets.SetsRequest;
+import org.example.dto.sets.SetsResponse;
+import org.example.services.SetsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,13 +13,13 @@ import jakarta.validation.Valid;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/sets")
-public class SetController {
+public class SetsController {
 
-    private final SetService setService;
+    private final SetsService setsService;
 
     @PostMapping
-    public ResponseEntity<SetResponse> create(@Valid @RequestBody SetRequest request) {
-        SetResponse response = setService.create(request);
+    public ResponseEntity<SetsResponse> create(@Valid @RequestBody SetsRequest request) {
+        SetsResponse response = setsService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

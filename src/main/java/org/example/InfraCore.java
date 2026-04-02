@@ -8,5 +8,4 @@ public class InfraCore {
     public static void main(String[] args) {
         SpringApplication.run(InfraCore.class, args);
     }
-
 }

@@ -1,4 +1,4 @@
-package org.example.dto.set;
+package org.example.dto.sets;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class SetRequest {
+public class SetsRequest {
     private Boolean isActive;
     @NotBlank(message = "{set.name.not_blank}")
     @Size(max = 100, message = "{set.name.size}")
