@@ -140,6 +140,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.name()));
+                .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
     }
 }

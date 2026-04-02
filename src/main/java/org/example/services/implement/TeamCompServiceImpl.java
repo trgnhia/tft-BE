@@ -2,6 +2,7 @@ package org.example.services.implement;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.dto.teamcomp.TeamCompRequest;
@@ -56,7 +57,7 @@ public class TeamCompServiceImpl implements TeamCompService {
     public TeamCompResponse getById(Long id) {
         TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage("error." + ErrorCode.TEAM_COMP_NOT_FOUND.name(), "Team Comp (ID: " + id + ")")
+                        MessageUtils.getMessage(Constants.MessageKey.TEAM_NOT_FOUND,id)
                 ));
         return teamCompMapper.toResponse(teamComp);
     }
