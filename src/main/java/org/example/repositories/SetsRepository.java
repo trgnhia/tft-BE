@@ -1,9 +1,9 @@
 package org.example.repositories;
 
-import org.example.entities.Set;
+import org.example.entities.Sets;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface SetRepository extends JpaRepository<Set, Long> {
+public interface SetsRepository extends JpaRepository<Sets, Long> {
     boolean existsByName (String name);
 
 }
