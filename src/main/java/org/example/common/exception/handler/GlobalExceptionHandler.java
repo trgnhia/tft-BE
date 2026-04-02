@@ -137,8 +137,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 Constants.MessageKey.ERROR_NOT_FOUND,
                 ex.getMessage()
         );
-
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.name()));
+                .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
     }
 }
