@@ -33,15 +33,11 @@ public class TeamCompServiceImpl implements TeamCompService {
     @Override
     @Transactional
     public TeamCompResponse create(TeamCompRequest request) {
-
         TeamComp teamComp = teamCompMapper.toEntity(request);
-
         final TeamComp savedTeamComp = teamCompRepository.save(teamComp);
 
         if (request.getChampionIds() != null && !request.getChampionIds().isEmpty()) {
-
             List<Champ> foundChamps = champRepository.findAllById(request.getChampionIds());
-
             List<TeamCompChamp> joinList = foundChamps.stream().map(champ -> {
                 TeamCompChamp tcc = new TeamCompChamp();
                 tcc.setTeamCompId(savedTeamComp.getId());
@@ -50,22 +46,18 @@ public class TeamCompServiceImpl implements TeamCompService {
                 tcc.setChamp(champ);
                 return tcc;
             }).collect(Collectors.toList());
-
-            teamComp.setTeamCompChamps(joinList);
-
-            teamComp = teamCompRepository.save(teamComp);
+            savedTeamComp.setTeamCompChamps(joinList);
+            teamCompRepository.save(savedTeamComp);
         }
-
-        return teamCompMapper.toResponse(teamComp);
+        return teamCompMapper.toResponse(savedTeamComp);
     }
 
     @Override
     public TeamCompResponse getById(Long id) {
         TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage("error." + ErrorCode.NOT_FOUND.name(), "Team Comp (ID: " + id + ")")
+                        MessageUtils.getMessage("error." + ErrorCode.TEAM_COMP_NOT_FOUND.name(), "Team Comp (ID: " + id + ")")
                 ));
-
         return teamCompMapper.toResponse(teamComp);
     }
 
@@ -74,12 +66,11 @@ public class TeamCompServiceImpl implements TeamCompService {
         return null;
     }
 
+
     @Override
     public void delete(Long id) {
 
     }
-
-
 
     @Override
     public Page<TeamCompResponse> filterTeamComps(Long setId, String keyword, List<String> styles, Long championId, Pageable pageable) {

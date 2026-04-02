@@ -28,6 +28,9 @@ public enum ErrorCode {
     CHAMP_NOT_FOUND("5001"),
     CHAMP_NOT_DELETED("5005"),
 
+    // team comp
+    TEAM_COMP_NOT_FOUND("7002"),
+
     //set
     SET_NOT_FOUND("6001");
     ErrorCode(String code) {
