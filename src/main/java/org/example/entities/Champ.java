@@ -25,7 +25,7 @@ public class Champ extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "set_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_champ_set"))
-    private Set sets;
+    private Sets sets;
 
     @Column(name = "slug", nullable = false, unique = true, length = 100)
     private String slug;
