@@ -13,7 +13,7 @@ import org.example.common.entity.AuditableEntity;
 @Table(name = "set")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Set extends AuditableEntity {
+public class Sets extends AuditableEntity {
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
     @Column(nullable = false, length = 100)
