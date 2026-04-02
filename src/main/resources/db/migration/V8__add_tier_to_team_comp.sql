@@ -1,0 +1,1 @@
+ALTER TABLE team_comp ADD COLUMN tier VARCHAR(10);
