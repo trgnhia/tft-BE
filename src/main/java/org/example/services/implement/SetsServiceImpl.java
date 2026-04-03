@@ -45,8 +45,7 @@ public class SetsServiceImpl implements SetsService {
 
         Sets sets = setsMapper.toEntity(request);
         sets.setName(normalizedName);
-        sets.setActive(request.getIsActive() != null ? request.getIsActive() : true);
-
+        sets.setActive(request.getIsActive() == null || request.getIsActive());
         Sets savedSets = setRepo.save(sets);
         return setsMapper.toSetsResponse(savedSets);
     }
