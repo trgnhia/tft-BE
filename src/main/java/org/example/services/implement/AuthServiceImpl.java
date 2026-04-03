@@ -13,6 +13,7 @@ import org.example.entities.Role;
 import org.example.entities.User;
 import org.example.repositories.RoleRepository;
 import org.example.repositories.UserRepository;
+import org.example.security.SecurityUser;
 import org.example.services.AuthService;
 import org.example.util.JwtUtil;
 import org.example.util.SecurityUtil;
@@ -20,11 +21,13 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 
@@ -42,13 +45,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthToken login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
-        );
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.username(), request.password())
+            );
 
-        // 2. Nếu code chạy xuống được đây nghĩa là thông tin hợp lệ. Lấy thông tin user ra.
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return buildToken(userDetails);
+            // 2. Nếu code chạy xuống được đây nghĩa là thông tin hợp lệ. Lấy thông tin user ra.
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            return buildToken(userDetails);
+        } catch (AuthenticationException e) {
+            throw new ServerException(ErrorCode.PASSWORD_INCORRECT);
+        }
     }
 
     private AuthToken buildToken(UserDetails userDetails) {
@@ -77,6 +84,7 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(defaultRole);
+        user.setEnabled(true);
         return user;
     }
 
@@ -86,15 +94,26 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(securityUtil.getCurrentUserIdOrThrow())
                 .orElseThrow(() -> new ServerException(ErrorCode.USER_NOT_FOUND));
 
-        user.setLastLogoutAt(Instant.now());
+        user.logout();
         userRepository.save(user);
     }
 
     @Override
     public AuthToken refresh(String refreshToken) {
-        jwtUtil.validateToken(refreshToken);
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new ServerException(ErrorCode.MISSING_TOKEN);
+        }
+
+        if (!jwtUtil.isValidToken(refreshToken)) {
+            throw new ServerException(ErrorCode.SESSION_EXPIRED);
+        }
+
         String userName = jwtUtil.getUsernameFromToken(refreshToken);
         UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
+        if (userDetails instanceof SecurityUser securityUser && !jwtUtil.isIssuedAfterLogout(refreshToken, securityUser.getLastLogoutAt())) {
+            throw new ServerException(ErrorCode.SESSION_REVOKED);
+        }
+
         return buildToken(userDetails);
     }
 }

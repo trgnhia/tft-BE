@@ -43,7 +43,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<String>> refresh(@CookieValue(name = "refresh_token", required = false) String refreshToken, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<String>> refresh(@CookieValue(name = "refresh-token", required = false) String refreshToken, HttpServletRequest request) {
         var token = authService.refresh(refreshToken);
         var accessTokenCookie = cookieService.createAccessTokenCookie(token.accessToken());
         var refreshTokenCookie = cookieService.createRefreshTokenCookie(token.refreshToken());
@@ -64,6 +64,11 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cleanAccessTokenCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, cleanRefreshTokenCookie.toString())
                 .body(ApiResponse.success("Logout success"));
+    }
+
+    @GetMapping("/proteced")
+    public ResponseEntity<ApiResponse<String>> protectedEndPoint() {
+        return ResponseEntity.ok(ApiResponse.success("Get Protected"));
     }
 
 }
