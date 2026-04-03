@@ -1,4 +1,4 @@
-package org.example.entities;
+package org.example.entities.champ;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

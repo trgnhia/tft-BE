@@ -1,4 +1,4 @@
-package org.example.entities;
+package org.example.entities.champ;
 
 import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
@@ -7,8 +7,7 @@ import jakarta.persistence.Table;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.example.common.entity.AuditableEntity;
-import org.example.entities.champ.ChampStats;
-import org.example.entities.champ.ChampTrait;
+import org.example.entities.Sets;
 import org.hibernate.annotations.*;
 import org.hibernate.type.SqlTypes;
 
