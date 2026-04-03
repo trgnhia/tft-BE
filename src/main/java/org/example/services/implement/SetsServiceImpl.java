@@ -1,6 +1,7 @@
 package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
 import org.example.common.constant.Constants;
+import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.dto.sets.SetsRequest;
@@ -17,17 +18,15 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true )
+@Transactional(readOnly = true)
 public class SetsServiceImpl implements SetsService {
+
     private final SetsRepository setRepo;
     private final SetsMapper setsMapper;
+
     @Override
     public SetsResponse getSetById(Long id) {
-        Sets sets = setRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
-                        "id " + String.valueOf(id)
-                ));
+        Sets sets = getSetOrThrow(id);
         return setsMapper.toSetsResponse(sets);
     }
 
@@ -40,37 +39,33 @@ public class SetsServiceImpl implements SetsService {
     @Override
     @Transactional
     public SetsResponse create(SetsRequest request) {
-       if (setRepo.existsByName(request.getName().trim())) {
-           throw new ConflictException(
-                   MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
-                   MessageUtils.getMessage(Constants.MessageKey.FIELD_SETS_NAME),
-                   request.getName().trim()
-           );
-       }
+        String normalizedName = normalizeName(request.getName());
+
+        validateDuplicateName(normalizedName);
 
         Sets sets = setsMapper.toEntity(request);
-       sets.setName(request.getName().trim());
-       sets.setActive(request.getIsActive() != null ? request.getIsActive() : true);
-       Sets savedSets = setRepo.save(sets);
-       return setsMapper.toSetsResponse(savedSets);
+        sets.setName(normalizedName);
+        sets.setActive(request.getIsActive() != null ? request.getIsActive() : true);
+
+        Sets savedSets = setRepo.save(sets);
+        return setsMapper.toSetsResponse(savedSets);
     }
 
     @Override
     @Transactional
     public SetsResponse update(Long id, SetsRequest request) {
-        Sets existingSet = setRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Set not found"));
-        String normalizedName = request.getName().trim();
+        Sets existingSet = getSetOrThrow(id);
+        String normalizedName = normalizeName(request.getName());
 
-        if (!existingSet.getName().equalsIgnoreCase(normalizedName)
-                && setRepo.existsByName(normalizedName)) {
-            throw new ConflictException("Set name already exists");
+        if (!existingSet.getName().equalsIgnoreCase(normalizedName)) {
+            validateDuplicateName(normalizedName);
         }
 
         existingSet.setName(normalizedName);
         if (request.getIsActive() != null) {
             existingSet.setActive(request.getIsActive());
         }
+
         Sets updatedSet = setRepo.save(existingSet);
         return setsMapper.toSetsResponse(updatedSet);
     }
@@ -78,14 +73,39 @@ public class SetsServiceImpl implements SetsService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Sets sets = setRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)
-                ));
+        Sets sets = getSetOrThrow(id);
         if (sets.isDeleted()) {
-            throw new ConflictException("Set already deleted!");
+            throw new ConflictException(
+                    ErrorCode.ALREADY_DELETED,
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
+                    MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                    String.valueOf(id)
+            );
         }
         sets.setDeleted(true);
         setRepo.save(sets);
+    }
+
+    private Sets getSetOrThrow(Long id) {
+        return setRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
+                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                        String.valueOf(id)
+                ));
+    }
+
+    private void validateDuplicateName(String name) {
+        if (setRepo.existsByName(name)) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
+                    MessageUtils.getMessage(Constants.MessageKey.FIELD_SETS_NAME),
+                    name
+            );
+        }
+    }
+
+    private String normalizeName(String name) {
+        return name.trim();
     }
 }

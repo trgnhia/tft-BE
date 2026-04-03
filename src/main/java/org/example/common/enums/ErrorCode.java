@@ -9,6 +9,7 @@ public enum ErrorCode {
     ALREADY_EXISTS("1001"),
     INCOMPLETE_DATA("1002"),
     FORMAT_INCORRECT("1003"),
+    ALREADY_DELETED("1004"),
 
     // Error access: 2xxx
     PERMISSION_DENIED("2000"),
