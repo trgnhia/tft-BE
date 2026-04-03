@@ -2,10 +2,13 @@ package org.example.common.exception.handler;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+
 import lombok.extern.slf4j.Slf4j;
+import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
+import org.example.common.exception.ResourceNotFoundException;
 import org.example.common.exception.ServerException;
 import org.example.common.exception.base.ParamError;
 import org.example.core.api.ApiResponse;
@@ -137,4 +140,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+
+        String msg = MessageUtils.getMessage(
+                Constants.MessageKey.ERROR_NOT_FOUND,
+                ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.name()));
+    }
 }
