@@ -78,11 +78,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleConflictException(ConflictException ex) {
         log.error("ConflictException Error ", ex);
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + ex.getErrorCode(),
+                ERROR_LOG_PREFIX + ex.getErrorCode().name(),
                 ex.getArgs(),
                 "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, ex.getErrorCode().name(), ex.getMessage()), ex.getStatus()
+                ApiResponse.error(msg, ex.getErrorCode().getCode(), ex.getMessage()), ex.getStatus()
         );
     }
 
