@@ -11,8 +11,8 @@ import org.example.core.api.PageResponse;
 import org.example.dto.champs.ChampResponse;
 import org.example.dto.champs.CreateChampRequest;
 import org.example.dto.champs.UpdateChampRequest;
-import org.example.entities.champ.Champ;
 import org.example.entities.Sets;
+import org.example.entities.champ.Champ;
 import org.example.mapper.ChampsMapper;
 import org.example.repositories.ChampRepository;
 import org.example.repositories.SetsRepository;
@@ -82,7 +82,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
 
         Champ savedChamp = champRepository.save(champ);
         log.info("[CHAMP] Created id={} slug={} by user={}",
-                savedChamp.getId(), savedChamp.getSlug(), getCurrentUserName());
+                savedChamp.getId(), savedChamp.getSlug(), getCurrentUserNameOrThrow());
         return champMapper.toResponse(champRepository.save(champ));
     }
 
@@ -104,7 +104,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
 
         champMapper.updateEntity(request, champ);
 
-        log.info("[CHAMP] Updated successfully id={} by user={}", id, getCurrentUserName());
+        log.info("[CHAMP] Updated successfully id={} by user={}", id, getCurrentUserNameOrThrow());
         return champMapper.toResponse(champ);
     }
 
@@ -118,7 +118,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                         Constants.MessageKey.CHAMP_NOT_FOUND, new Object[]{Constants.MessageKey.ENTITY_CHAMP}));
 
         champRepository.delete(champ);
-        log.info("[CHAMP] Deleted successfully id={} by user={}", id, getCurrentUserName());
+        log.info("[CHAMP] Deleted successfully id={} by user={}", id, getCurrentUserNameOrThrow());
     }
 
     @Override
@@ -155,6 +155,6 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         }
 
         champ.setDeleted(false);
-        log.info("[CHAMP-ADMIN] Restored successfully id={} by user={}", id, getCurrentUserName());
+        log.info("[CHAMP-ADMIN] Restored successfully id={} by user={}", id, getCurrentUserNameOrThrow());
     }
 }

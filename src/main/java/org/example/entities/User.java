@@ -1,8 +1,6 @@
 package org.example.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
-import org.example.common.entity.AuditableEntity;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.common.entity.BaseEntity;

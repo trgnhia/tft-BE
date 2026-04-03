@@ -28,7 +28,7 @@ public enum ErrorCode {
     // Error system: 4xxx
     UNEXPECTED_ERROR("4000"),
     SERVICE_UNAVAILABLE("4001"),
-    CONNECTION("4002");
+    CONNECTION("4002") ;
 
 
     ErrorCode(String code) {

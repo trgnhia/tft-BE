@@ -21,10 +21,6 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtUtil {
     private final SecurityProperties securityProperties;
-    @Value(value = "${JWT_SECRET}")
-    private String jwtSecret;
-    @Value(value = "${JWT_EXPIRATION}")
-    private long expirationMs;
     private SecretKey secretKey;
 
     private SecretKey getSigningKey() {
