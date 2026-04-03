@@ -43,7 +43,7 @@ public class SetsServiceImpl implements SetsService {
            throw new ConflictException("Set name already exists");
        }
 
-       Sets sets = new Sets();
+        Sets sets = setsMapper.toEntity(request);
        sets.setName(request.getName().trim());
        sets.setActive(request.getIsActive() != null ? request.getIsActive() : true);
        Sets savedSets = setRepo.save(sets);
@@ -68,5 +68,19 @@ public class SetsServiceImpl implements SetsService {
         }
         Sets updatedSet = setRepo.save(existingSet);
         return setsMapper.toSetsResponse(updatedSet);
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        Sets sets = setRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)
+                ));
+        if (sets.isDeleted()) {
+            throw new ConflictException("Set already deleted!");
+        }
+        sets.setDeleted(true);
+        setRepo.save(sets);
     }
 }
