@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.example.common.entity.BaseEntity;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
@@ -13,6 +14,7 @@ import java.time.Instant;
 @Table(name = "users")
 @Getter
 @Setter
+@EntityListeners(AuditingEntityListener.class)
 public class User extends BaseEntity {
     @Column(name = "username", unique = true)
     private String username;
@@ -35,4 +37,8 @@ public class User extends BaseEntity {
     @LastModifiedDate
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    public void logout() {
+        lastLogoutAt = Instant.now();
+    }
 }

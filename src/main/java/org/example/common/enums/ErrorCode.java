@@ -20,6 +20,11 @@ public enum ErrorCode {
     MAX_LENGTH("3003"),
     FAIL_ATTEMPT("3004"),
     USER_NOT_FOUND("3005"),
+    SESSION_EXPIRED("3006"),
+    SESSION_REVOKED("3007"),
+    UNAUTHORIZED("3008"),
+    MISSING_TOKEN("3009"),
+
     // Error system: 4xxx
     UNEXPECTED_ERROR("4000"),
     SERVICE_UNAVAILABLE("4001"),

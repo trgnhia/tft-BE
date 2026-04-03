@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.configuration.SecurityProperties;
 import org.example.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,11 +25,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
     private final HandlerExceptionResolver exceptionResolver;
+    private final SecurityProperties securityProperties;
 
-    public JwtAuthFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+    public JwtAuthFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService,
+                         @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
+                         SecurityProperties securityProperties) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.exceptionResolver = exceptionResolver;
+        this.securityProperties = securityProperties;
     }
 
     @Override
@@ -38,11 +43,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (isValidToken(token)) {
                 authenticateUser(request, token);
             }
+            filterChain.doFilter(request, response);
         } catch (JwtException ex) {
             SecurityContextHolder.clearContext();
             exceptionResolver.resolveException(request, response, null, ex);
         }
-        filterChain.doFilter(request, response);
     }
 
     private void authenticateUser(HttpServletRequest request, String token) {
@@ -57,13 +62,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isValidToken(String token) {
-        return token != null && jwtUtil.validateToken(token);
+        return token != null && jwtUtil.isValidToken(token);
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {
         if (request.getCookies() == null) return null;
         return Arrays.stream(request.getCookies())
-                .filter(c -> c.getName().equals("access_token"))
+                .filter(c -> c.getName().equals(securityProperties.getAccessTokenCookie()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);

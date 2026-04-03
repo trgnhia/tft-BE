@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Slf4j
@@ -23,10 +24,9 @@ public class JwtUtil {
     private SecretKey secretKey;
 
     private SecretKey getSigningKey() {
-        if (secretKey == null) {
-            secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(securityProperties.getJwtSecretKey()));
-        }
-        return secretKey;
+        // Đổi sang BASE64
+        byte[] keyBytes = Decoders.BASE64.decode(securityProperties.getJwtSecretKey());
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateAccessToken(UserDetails userDetails, Instant instant) {
@@ -47,7 +47,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    public boolean validateToken(String token) {
+    public boolean isValidToken(String token) {
         try {
             Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
             return true;
@@ -65,7 +65,11 @@ public class JwtUtil {
     public boolean isIssuedAfterLogout(String token, Instant lastLogoutAt) {
         if (lastLogoutAt == null) return true;
         Date issuedAt = extractAllClaims(token).getIssuedAt();
-        return issuedAt.toInstant().isAfter(lastLogoutAt);
+
+        Instant issueInstant = issuedAt.toInstant().truncatedTo(ChronoUnit.SECONDS);
+        Instant logoutInstant = lastLogoutAt.truncatedTo(ChronoUnit.SECONDS);
+
+        return issueInstant.isAfter(logoutInstant);
     }
 
     private Claims extractAllClaims(String token) {

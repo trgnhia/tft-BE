@@ -1,9 +1,15 @@
 package org.example.dto.auth;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public record LoginRequest(
-        @Min(value = 1, message = "error.MIN_LENGTH") @Max(value = 50, message = "error.MAX_LENGTH") String username,
-        @Min(value = 1, message = "error.MIN_LENGTH") @Max(value = 255, message = "error.MAX_LENGTH") String password) {
+        @NotBlank(message = "error.NOT_BLANK")
+        @Size(min = 1, max = 50, message = "error.LENGTH_1_50")
+        String username,
+
+        @NotBlank(message = "error.NOT_BLANK")
+        @Size(min = 1, max = 255, message = "error.LENGTH_1_255")
+        String password
+) {
 }
