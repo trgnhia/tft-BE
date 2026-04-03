@@ -1,5 +1,4 @@
-package org.example.core.logging; // Đổi lại theo đường dẫn bạn chọn
-
+package org.example.core.logging;
 import lombok.Getter;
 import org.example.entities.CmsLog;
 import org.springframework.stereotype.Component;

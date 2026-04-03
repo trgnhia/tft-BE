@@ -1,5 +1,4 @@
-package org.example.core.logging; // Đổi lại theo đường dẫn bạn chọn
-
+package org.example.core.logging;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.logging.InternalLogQueue;
@@ -26,6 +25,7 @@ public class CmsLogWorker {
     @Scheduled(fixedDelay = 5000)
     @Transactional
     public void processLogs() {
+        log.info("Worker đang chạy... Tổng số Log đang nằm trong Queue: {}", logQueue.getQueue().size());
         if (logQueue.getQueue().isEmpty()) {
             return;
         }

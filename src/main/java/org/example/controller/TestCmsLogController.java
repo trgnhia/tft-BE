@@ -15,9 +15,9 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class TestCmsLogController {
 
-    private InternalLogQueue internalLogQueue;
+    private final InternalLogQueue internalLogQueue;
 
-    @GetMapping("/spam")
+    @GetMapping
     public String spamLog(@RequestParam(defaultValue = "1") int count) {
         for (int i = 0; i < count; i++) {
             CmsLog mockLog = new CmsLog();
@@ -28,9 +28,10 @@ public class TestCmsLogController {
             mockLog.setIpAddress("127.0.0.1");
             mockLog.setRequestBody("{\"test\": \"data " + i + "\"}");
             mockLog.setResultStatus(200);
-            mockLog.setStartTime(Instant.now().minusMillis(150)); // Giả lập chạy mất 150ms
+            mockLog.setStartTime(Instant.now().minusMillis(150));
             mockLog.setEndTime(Instant.now());
             mockLog.setDurationMs(150);
+            internalLogQueue.push(mockLog);
         }
         return "Pushed " + count + " log messages to the queue.";
 
