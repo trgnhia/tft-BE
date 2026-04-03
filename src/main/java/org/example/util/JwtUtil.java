@@ -5,17 +5,22 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.example.configuration.SecurityProperties;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
+    private final SecurityProperties securityProperties;
     @Value(value = "${JWT_SECRET}")
     private String jwtSecret;
     @Value(value = "${JWT_EXPIRATION}")
@@ -23,23 +28,30 @@ public class JwtUtil {
     private SecretKey secretKey;
 
     private SecretKey getSigningKey() {
-        if (secretKey == null) {
-            secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(jwtSecret));
-        }
-        return secretKey;
+        // Đổi sang BASE64
+        byte[] keyBytes = Decoders.BASE64.decode(securityProperties.getJwtSecretKey());
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String username) {
-        Instant now = Instant.now();
+    public String generateAccessToken(UserDetails userDetails, Instant instant) {
         return Jwts.builder()
-                .subject(username)
-                .expiration(Date.from(now.plusMillis(expirationMs)))
-                .issuedAt(Date.from(now))
+                .subject(userDetails.getUsername())
+                .expiration(Date.from(instant.plusMillis(securityProperties.getAccessTokenExpirationMs())))
+                .issuedAt(Date.from(instant))
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    public boolean validateToken(String token) {
+    public String generateRefreshToken(UserDetails userDetails, Instant instant) {
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .expiration(Date.from(instant.plusMillis(securityProperties.getRefreshTokenExpirationMs())))
+                .issuedAt(Date.from(instant))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public boolean isValidToken(String token) {
         try {
             Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
             return true;
@@ -57,7 +69,11 @@ public class JwtUtil {
     public boolean isIssuedAfterLogout(String token, Instant lastLogoutAt) {
         if (lastLogoutAt == null) return true;
         Date issuedAt = extractAllClaims(token).getIssuedAt();
-        return issuedAt.toInstant().isAfter(lastLogoutAt);
+
+        Instant issueInstant = issuedAt.toInstant().truncatedTo(ChronoUnit.SECONDS);
+        Instant logoutInstant = lastLogoutAt.truncatedTo(ChronoUnit.SECONDS);
+
+        return issueInstant.isAfter(logoutInstant);
     }
 
     private Claims extractAllClaims(String token) {
