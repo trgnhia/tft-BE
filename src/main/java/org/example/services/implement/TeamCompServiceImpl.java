@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,7 @@ public class TeamCompServiceImpl implements TeamCompService {
     @Transactional
     public TeamCompResponse create(TeamCompRequest request) {
         TeamComp teamComp = teamCompMapper.toEntity(request);
+
         final TeamComp savedTeamComp = teamCompRepository.save(teamComp);
 
         if (request.getChampionIds() != null && !request.getChampionIds().isEmpty()) {
@@ -47,7 +49,11 @@ public class TeamCompServiceImpl implements TeamCompService {
                 tcc.setChamp(champ);
                 return tcc;
             }).collect(Collectors.toList());
-            savedTeamComp.setTeamCompChamps(joinList);
+            if (savedTeamComp.getTeamCompChamps() == null) {
+                savedTeamComp.setTeamCompChamps(new ArrayList<>());
+            }
+            savedTeamComp.getTeamCompChamps().addAll(joinList);
+
             teamCompRepository.save(savedTeamComp);
         }
         return teamCompMapper.toResponse(savedTeamComp);
