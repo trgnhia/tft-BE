@@ -9,6 +9,7 @@ import java.util.List;
 @Setter
 public class TeamCompRequest {
 
+    private Long setId;
     private String tier;         //  "S", "A", "B"
     private String name;         //  "Mecha Channelers"
     private String style;        //  "Fast 8", "Slow Roll (7)"
