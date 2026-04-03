@@ -25,7 +25,8 @@ public class SetsServiceImpl implements SetsService {
     public SetsResponse getSetById(Long id) {
         Sets sets = setRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
+                        "id " + String.valueOf(id)
                 ));
         return setsMapper.toSetsResponse(sets);
     }
@@ -40,7 +41,11 @@ public class SetsServiceImpl implements SetsService {
     @Transactional
     public SetsResponse create(SetsRequest request) {
        if (setRepo.existsByName(request.getName().trim())) {
-           throw new ConflictException("Set name already exists");
+           throw new ConflictException(
+                   MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
+                   MessageUtils.getMessage(Constants.MessageKey.FIELD_SETS_NAME),
+                   request.getName().trim()
+           );
        }
 
         Sets sets = setsMapper.toEntity(request);

@@ -37,4 +37,9 @@ public class ItemServiceImpl implements ItemService {
     public ItemResponse update(Long id, ItemRequest request) {
         return null;
     }
+
+    @Override
+    public void delete(Long id) {
+
+    }
 }

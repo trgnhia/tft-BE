@@ -79,12 +79,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflictException(ConflictException ex) {
         log.error("ConflictException Error ", ex);
+
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
-                ex.getArgs(),
-                "");
+                (Object[]) ex.getArgs()
+        );
+
         return new ResponseEntity<>(
-                ApiResponse.error(msg, ex.getErrorCode().name(), ex.getMessage()), ex.getStatus()
+                ApiResponse.error(msg, ex.getErrorCode().getCode(), ex.getMessage()),
+                ex.getStatus()
         );
     }
 
@@ -134,8 +137,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
 
         String msg = MessageUtils.getMessage(
-                Constants.MessageKey.ERROR_NOT_FOUND,
-                ex.getMessage()
+                ERROR_LOG_PREFIX + ex.getErrorCode(),
+                (Object[]) ex.getArgs()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
