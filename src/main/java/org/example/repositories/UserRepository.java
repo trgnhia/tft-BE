@@ -1,5 +1,6 @@
 package org.example.repositories;
 
+import jakarta.validation.constraints.Email;
 import lombok.NonNull;
 import org.example.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsernameWithRolesAndPermissions(@Param("username") String username);
 
     boolean existsByUsername(@NonNull String username);
+
+    boolean existsByEmail(@NonNull @Email String email);
 }
