@@ -15,7 +15,7 @@ import java.io.Serializable;
 public class TeamCompChamp {
 
     @Id
-    @Column(name = "temp_comp_id")
+    @Column(name = "team_comp_id")
     private Long teamCompId;
 
     @Id
@@ -24,7 +24,7 @@ public class TeamCompChamp {
 
     // Liên kết với bảng team_comp
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "temp_comp_id", insertable = false, updatable = false)
+    @JoinColumn(name = "team_comp_id", insertable = false, updatable = false)
     private TeamComp teamComp;
 
     // Liên kết với bảng champs
