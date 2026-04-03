@@ -26,7 +26,7 @@ public class SetsServiceImpl implements SetsService {
 
     @Override
     public SetsResponse getSetById(Long id) {
-        Sets sets = getSetOrThrow(id);
+        Sets sets = getById(id);
         return setsMapper.toSetsResponse(sets);
     }
 
@@ -53,7 +53,7 @@ public class SetsServiceImpl implements SetsService {
     @Override
     @Transactional
     public SetsResponse update(Long id, SetsRequest request) {
-        Sets existingSet = getSetOrThrow(id);
+        Sets existingSet = getById(id);
         String normalizedName = normalizeName(request.getName());
 
         if (!existingSet.getName().equalsIgnoreCase(normalizedName)) {
@@ -72,7 +72,7 @@ public class SetsServiceImpl implements SetsService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Sets sets = getSetOrThrow(id);
+        Sets sets = getById(id);
         if (sets.isDeleted()) {
             throw new ConflictException(
                     ErrorCode.ALREADY_DELETED,
@@ -85,7 +85,7 @@ public class SetsServiceImpl implements SetsService {
         setRepo.save(sets);
     }
 
-    private Sets getSetOrThrow(Long id) {
+    private Sets getById(Long id) {
         return setRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),

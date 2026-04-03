@@ -17,6 +17,7 @@ public class Item extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "set_id", nullable = false)
     private Sets sets;
+    private String name;
     @Column(name = "image_url")
     private String imageUrl;
     @Type(JsonBinaryType.class)

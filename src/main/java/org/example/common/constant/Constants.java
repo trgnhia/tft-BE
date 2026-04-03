@@ -15,5 +15,6 @@ package org.example.common.constant;
             public static final String ENTITY_SETS = "entity.sets";
             public static final String FIELD_ID = "field.id";
             public static final String FIELD_SETS_NAME = "field.sets.name";
+            public static final String ENTITY_ITEM = "entity.item";
         }
     }
