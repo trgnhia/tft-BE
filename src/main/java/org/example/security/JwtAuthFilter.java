@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -39,15 +40,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = extractTokenFromCookie(request);
+
         try {
             if (isValidToken(token)) {
                 authenticateUser(request, token);
             }
-            filterChain.doFilter(request, response);
-        } catch (JwtException ex) {
+        } catch (JwtException | UsernameNotFoundException ex) {
             SecurityContextHolder.clearContext();
             exceptionResolver.resolveException(request, response, null, ex);
+            return;
         }
+
+        filterChain.doFilter(request, response);
     }
 
     private void authenticateUser(HttpServletRequest request, String token) {
