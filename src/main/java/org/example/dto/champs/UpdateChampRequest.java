@@ -1,6 +1,8 @@
 package org.example.dto.champs;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -23,6 +25,10 @@ public class UpdateChampRequest {
 
     @Size(max = 500, message = "{" + Constants.MessageKey.CHAMP_IMAGE_URL_SIZE + "}")
     private String imageUrl;
+
+    @Min(value = 1, message = "{" + Constants.MessageKey.CHAMP_COST_MIN + "}")
+    @Max(value = 5, message = "{" + Constants.MessageKey.CHAMP_COST_MAX + "}")
+    private Integer cost;
 
     @Valid
     private ChampStatsRequest stats;

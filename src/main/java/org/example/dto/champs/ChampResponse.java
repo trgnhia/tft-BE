@@ -16,6 +16,7 @@ import java.time.Instant;
 public class ChampResponse {
     private Long id;
     private Long setsId;
+    private Integer cost;
     private String setsName;
     private String slug;
     private String name;

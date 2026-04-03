@@ -66,13 +66,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isValidToken(String token) {
-        return token != null && jwtUtil.isValidToken(token);
+        boolean valid = token != null && jwtUtil.isValidToken(token);
+        System.out.println("DEBUG: Token string exists: " + (token != null));
+        System.out.println("DEBUG: JwtUtil.isValidToken returns: " + valid);
+        return valid;
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
+        if (request.getCookies() == null) {
+            System.out.println("DEBUG: No cookies found in request!");
+            return null;
+        }
+        String cookieName = securityProperties.getAccessTokenCookie();
+        System.out.println("DEBUG: Searching for cookie name: " + cookieName);
+
         return Arrays.stream(request.getCookies())
-                .filter(c -> c.getName().equals(securityProperties.getAccessTokenCookie()))
+                .peek(c -> System.out.println("DEBUG: Found cookie: " + c.getName()))
+                .filter(c -> c.getName().equals(cookieName))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);

@@ -35,6 +35,7 @@ public class SecurityConfig {
     private final DelegatedSecurityExceptionHandler securityExceptionHandler;
 
     private static final String[] PUBLIC_ENDPOINTS = {
+            "/champs/**",
             "/auth/signin",
             "/auth/signup",
             "/auth/refresh",

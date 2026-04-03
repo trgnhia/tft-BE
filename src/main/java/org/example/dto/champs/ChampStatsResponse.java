@@ -13,11 +13,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChampStatsResponse {
-    private int cost;
     private List<Integer> hp;
     private List<Integer> ad;
-    private int armor;
-    private int range;
+    private Integer armor;
+    private Integer range;
 
     @JsonProperty("magic_resist")
     private int magicResist;

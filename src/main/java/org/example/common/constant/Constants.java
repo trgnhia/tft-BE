@@ -12,6 +12,9 @@ public final class Constants {
 
     public static final class MessageKey {
         public static final String ERROR_INCOMPLETE_DATA = "error.INCOMPLETE_DATA";
+        public static final String CHAMP_COST_NOT_NULL = "champ.cost.not_null";
+        public static final String CHAMP_COST_MIN = "champ.cost.min";
+        public static final String CHAMP_COST_MAX = "champ.cost.max";
 
         private MessageKey() {}
         public static final String ERROR_NOT_FOUND = "error.NOT_FOUND";

@@ -1,10 +1,7 @@
 package org.example.dto.champs;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +16,11 @@ public class CreateChampRequest {
 
     @NotNull(message = "{" + Constants.MessageKey.CHAMP_SET_ID_NOT_NULL + "}")
     private Long setId;
+
+    @NotNull(message = "{" + Constants.MessageKey.CHAMP_COST_NOT_NULL + "}")
+    @Min(value = 1, message = "{" + Constants.MessageKey.CHAMP_COST_MIN + "}")
+    @Max(value = 5, message = "{" + Constants.MessageKey.CHAMP_COST_MAX + "}")
+    private Integer cost;
 
     @NotBlank(message = "{" + Constants.MessageKey.CHAMP_SLUG_NOT_BLANK + "}")
     @Size(max = 100, message = "{" + Constants.MessageKey.CHAMP_SLUG_SIZE + "}")

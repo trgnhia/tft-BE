@@ -15,12 +15,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChampStatsRequest {
-    @Min(value = 0, message = "{" + Constants.MessageKey.CHAMP_STATS_COST_MIN + "}")
-    @Max(value = 45, message = "{" + Constants.MessageKey.CHAMP_STATS_COST_MAX + "}")
-    private int cost;
 
     @NotEmpty(message = "{" + Constants.MessageKey.CHAMP_STATS_HP_NOT_EMPTY + "}")
-    @Size(min = 3, max = 3, message = "{" + Constants.MessageKey.CHAMP_STATS_HP_SIZE + "}")
+    @Size(min = 1, message = "{" + Constants.MessageKey.CHAMP_STATS_HP_SIZE + "}")
     private List<@Min(value = 1, message = "{" + Constants.MessageKey.CHAMP_STATS_HP_MIN + "}") Integer> hp;
 
     @NotEmpty(message = "{" + Constants.MessageKey.CHAMP_STATS_AD_NOT_EMPTY + "}")

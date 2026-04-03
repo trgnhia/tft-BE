@@ -30,6 +30,9 @@ public class Champ extends AuditableEntity {
             foreignKey = @ForeignKey(name = "fk_champ_set"))
     private Sets sets;
 
+    @Column(name = "cost", nullable = false)
+    private Integer cost;
+
     @Column(name = "slug", nullable = false, unique = true, length = 100)
     private String slug;
 
@@ -42,6 +45,7 @@ public class Champ extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "stats", columnDefinition = "jsonb")
     private ChampStats stats;
+
 
     @OneToMany(mappedBy = "champ", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<ChampTrait> champTraits = new ArrayList<>();

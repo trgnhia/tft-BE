@@ -14,7 +14,6 @@ import java.util.List;
 @NoArgsConstructor
 public class ChampStats implements Serializable {
 
-    private int cost;
     private List<Integer> hp;
     private List<Integer> ad;
     private int armor;
