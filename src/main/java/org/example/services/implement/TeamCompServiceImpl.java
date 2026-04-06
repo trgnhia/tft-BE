@@ -16,6 +16,7 @@ import org.example.repositories.TeamCompRepository;
 import org.example.services.TeamCompService;
 import org.example.util.MessageUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -154,6 +155,17 @@ public class TeamCompServiceImpl implements TeamCompService {
 
     @Override
     public Page<TeamCompResponse> filterTeamComps(Long setId, String keyword, List<String> styles, Long championId, Pageable pageable) {
-        return null;
+        Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(setId, keyword, styles, championId, pageable);
+
+        if (pagedIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(pagedIds.getContent());
+
+        List<TeamCompResponse> responses = teamComps.stream()
+                .map(teamCompMapper::toResponse)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
     }
 }
