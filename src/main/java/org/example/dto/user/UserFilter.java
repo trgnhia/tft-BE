@@ -1,6 +1,4 @@
 package org.example.dto.user;
 
-import org.example.common.enums.RoleCode;
-
-public record UserFilter(RoleCode roleCode, Boolean enable) {
+public record UserFilter(String userName, String email, Long roleId, Boolean enabled) {
 }

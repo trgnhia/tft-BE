@@ -2,12 +2,10 @@ package org.example.services.implement;
 
 import lombok.RequiredArgsConstructor;
 import org.example.common.enums.ErrorCode;
-import org.example.common.enums.RoleCode;
 import org.example.common.exception.DataException;
 import org.example.core.api.PageResponse;
-import org.example.dto.user.CreateUserRequest;
-import org.example.dto.user.UpdateUserRoleRequest;
-import org.example.dto.user.UserResponse;
+import org.example.dto.user.*;
+import org.example.entities.Permission;
 import org.example.entities.Role;
 import org.example.entities.User;
 import org.example.repositories.RoleRepository;
@@ -19,6 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -29,8 +30,8 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public PageResponse<UserResponse> getAllUser(Pageable pageable) {
-        var userPaged = userRepository.findAll(pageable)
+    public PageResponse<UserResponse> getAllUser(UserFilter userFilter, Pageable pageable) {
+        var userPaged = userRepository.findAllByFilter(userFilter.userName(), userFilter.email(), userFilter.roleId(), userFilter.enabled(), pageable)
                 .map(this::mapToUserResponse);
         return PageResponse.from(userPaged);
     }
@@ -42,7 +43,7 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUsername(request.userName());
         user.setEmail(request.email());
-        Role role = getOrThrowRole(request.roleCode());
+        Role role = getOrThrowRole(request.roleId());
         user.setRole(role);
         user.setPasswordHash(passwordEncoder.encode(request.defaultPassword()));
         User saved = userRepository.save(user);
@@ -54,10 +55,72 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse updateUserRole(Long userId, UpdateUserRoleRequest request) {
         User user = getOrThrowUser(userId);
-        Role newRole = getOrThrowRole(request.roleCode());
+        Role newRole = getOrThrowRole(request.roleId());
         user.setRole(newRole);
         User saved = userRepository.save(user);
         return mapToUserResponse(saved);
+    }
+
+    @Override
+    public UserDetailedResponse getDetailedById(Long userId) {
+        User user = getOrThrowUser(userId);
+        return mapToUserDetailed(user);
+    }
+
+    @Override
+    @Transactional
+    public UserDetailedResponse updateUserProfile(Long userId, UpdateUserProfileRequest request) {
+        User user = getOrThrowUser(userId);
+        Role newRole = getOrThrowRole(request.roleId());
+        user.setRole(newRole);
+        user.setUsername(request.userName());
+        user.setEmail(request.email());
+        User saved = userRepository.save(user);
+        return mapToUserDetailed(saved);
+    }
+
+    @Override
+    @Transactional
+    public UserDetailedResponse deleteUserById(Long userId) {
+        User user = getOrThrowUser(userId);
+        user.setDeleted(true);
+        var deleted = userRepository.save(user);
+        return mapToUserDetailed(deleted);
+    }
+
+    @Override
+    public UserDetailedResponse updateStatus(Long userId, UpdateAccountStatusRequest request) {
+        User user = getOrThrowUser(userId);
+        user.setEnabled(request.enabled());
+        User saved = userRepository.save(user);
+        return mapToUserDetailed(saved);
+    }
+
+    private UserDetailedResponse mapToUserDetailed(User user) {
+        return UserDetailedResponse.builder()
+                .userName(user.getUsername())
+                .email(user.getEmail())
+                .enabled(user.isEnabled())
+                .deleted(user.isDeleted())
+                .createdDate(user.getCreatedAt())
+                .lastLogout(user.getLastLogoutAt())
+                .role(user.getRole().getCode().toString())
+                .roleDescription(user.getRole().getDescription())
+                .permissions(resolvePermissions(user.getRole().getPermissions()))
+                .build();
+    }
+
+    private List<PermissionDto> resolvePermissions(Set<Permission> permissions) {
+        return permissions.stream()
+                .map(this::toPermissionDto)
+                .toList();
+    }
+
+    private PermissionDto toPermissionDto(Permission permission) {
+        return PermissionDto.builder()
+                .permission(permission.getCode())
+                .description(permission.getDescription())
+                .build();
     }
 
     private UserResponse mapToUserResponse(User saved) {
@@ -69,12 +132,12 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    public Role getOrThrowRole(RoleCode roleCode) {
-        return roleRepository.findByCode(roleCode)
+    private Role getOrThrowRole(Long roleId) {
+        return roleRepository.findById(roleId)
                 .orElseThrow(() -> new DataException(ErrorCode.NOT_FOUND, "Role"));
     }
 
-    public User getOrThrowUser(Long userId) {
+    private User getOrThrowUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new DataException(ErrorCode.NOT_FOUND, "User"));
     }
