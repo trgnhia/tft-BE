@@ -36,6 +36,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/champs/**",
+            "/team-comp/**",
             "/auth/signin",
             "/auth/signup",
             "/auth/refresh",

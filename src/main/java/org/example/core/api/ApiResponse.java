@@ -14,6 +14,9 @@ public class ApiResponse<T> {
     private Object message;
     private T data;
     private String code;
+
+
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String detail;
 

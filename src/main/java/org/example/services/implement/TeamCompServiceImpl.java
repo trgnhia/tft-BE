@@ -6,7 +6,7 @@ import org.example.common.constant.Constants;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.dto.teamcomp.TeamCompRequest;
 import org.example.dto.teamcomp.TeamCompResponse;
-import org.example.entities.Champ;
+import org.example.entities.champ.Champ;
 import org.example.entities.TeamComp;
 import org.example.entities.TeamCompChamp;
 import org.example.mapper.TeamCompMapper;
@@ -47,7 +47,7 @@ public class TeamCompServiceImpl implements TeamCompService {
 
             if (foundChamps.size() != request.getChampionIds().size()) {
 
-                throw new ResourceNotFoundException(MessageUtils.getMessage("error.NOT_FOUND", "Champion"));
+                throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.CHAMP_NOT_FOUND));
             }
 
             List<TeamCompChamp> joinList = foundChamps.stream().map(champ -> {
@@ -88,7 +88,7 @@ public class TeamCompServiceImpl implements TeamCompService {
 
 
             if (champs.size() != request.getChampionIds().size()) {
-                throw new ResourceNotFoundException(MessageUtils.getMessage("error.NOT_FOUND", "Champion"));
+                throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.CHAMP_NOT_FOUND));
             }
 
             Set<Long> requestChampIds = request.getChampionIds().stream().collect(Collectors.toSet());

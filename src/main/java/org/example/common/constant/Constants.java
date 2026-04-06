@@ -26,6 +26,8 @@ public final class Constants {
         public static final String ENTITY_CHAMP = "entity.champ";
         public static final String ENTITY_TRAIT = "entity.trait";
         public static final String ENTITY_USER = "entity.user";
+        public static final String ENTITY_TEAMS = "entity.teams";
+
 
         // field name
         public static final String FIELD_SETS_NAME = "field.sets.name";
