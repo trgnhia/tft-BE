@@ -12,13 +12,12 @@ public final class Constants {
 
     public static final class MessageKey {
         private MessageKey() {}
-        public static final String ERROR_NOT_FOUND = "error.NOT_FOUND";
-        public static final String ERROR_ALREADY_EXIST = "error.ALREADY_EXIST";
+
 
         public static final String ENTITY_SETS = "entity.sets";
         public static final String FIELD_SETS_NAME = "field.sets.name";
 
 
-        public static final String TEAM_NOT_FOUND = "team.not.found";
+        public static final String ENTITY_TEAMS = "entity.team";
     }
 }
