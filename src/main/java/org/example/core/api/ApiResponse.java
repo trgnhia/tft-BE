@@ -3,12 +3,12 @@ package org.example.core.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import org.example.common.constant.Constants;
-
-@Builder
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class ApiResponse<T> {
     private boolean success;
     private Object message;

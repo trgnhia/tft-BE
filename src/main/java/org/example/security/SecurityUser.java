@@ -11,14 +11,17 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-@Getter
 public class SecurityUser implements UserDetails {
+    @Getter
     private final Long id;
-
     private final String username;
+    @Getter
     private final String email;
+    @Getter
     private final String roleCode;
+    @Getter
     private final Instant lastLogoutAt;
+    private final String passwordHashed;
 
     private final boolean enabled;
 
@@ -30,8 +33,9 @@ public class SecurityUser implements UserDetails {
         this.username = user.getUsername();
         this.enabled = user.isEnabled();
         this.lastLogoutAt = user.getLastLogoutAt();
-        this.roleCode = user.getRole().getCode().name();
+        this.passwordHashed = user.getPasswordHash();
 
+        this.roleCode = user.getRole().getCode().name();
         Set<GrantedAuthority> auths = new HashSet<>();
         auths.add(new SimpleGrantedAuthority("ROLE_" + this.roleCode));
 
@@ -49,7 +53,7 @@ public class SecurityUser implements UserDetails {
 
     @Override
     public String getPassword() {
-        return "";
+        return passwordHashed;
     }
 
 
@@ -62,4 +66,5 @@ public class SecurityUser implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
+
 }
