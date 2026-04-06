@@ -11,7 +11,7 @@ import java.lang.annotation.*;
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Password {
-    String message() default "error.WEAK_PASSWORD";
+    String message() default "{error.WEAK_PASSWORD}";
 
     Class<?>[] groups() default {};
 
