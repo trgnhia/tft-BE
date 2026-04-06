@@ -7,7 +7,7 @@ import org.example.entities.TeamCompChamp;
 import org.example.entities.Sets;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface TeamCompMapper {
 
     // MAPPING ENTITY -> RESPONSE
