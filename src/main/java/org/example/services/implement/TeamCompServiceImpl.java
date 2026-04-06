@@ -59,7 +59,7 @@ public class TeamCompServiceImpl implements TeamCompService {
             List<Champ> foundChamps = champRepository.findAllById(uniqueChampIds);
 
             if (foundChamps.size() != uniqueChampIds.size()) {
-                throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.CHAMP_NOT_FOUND));
+                throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ERROR_NOT_FOUND));
             }
 
             List<TeamCompChamp> joinList = foundChamps.stream().map(champ -> {
@@ -110,7 +110,7 @@ public class TeamCompServiceImpl implements TeamCompService {
             List<Champ> champs = champRepository.findAllById(uniqueChampIds);
 
             if (champs.size() != uniqueChampIds.size()) {
-                throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.CHAMP_NOT_FOUND));
+                throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ERROR_NOT_FOUND));
             }
 
             teamComp.getTeamCompChamps().removeIf(tcc -> !uniqueChampIds.contains(tcc.getChampionId()));
