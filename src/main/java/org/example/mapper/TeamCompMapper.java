@@ -33,7 +33,7 @@ public interface TeamCompMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "teamCompChamps", ignore = true)
     @Mapping(target = "sets", ignore = true)
-    @Mapping(target = "slug", expression = "java(generateSlug(request.getName()))")
+    @Mapping(target = "slug", ignore = true)
     void updateEntity(TeamCompRequest request, @MappingTarget TeamComp entity);
 
     @AfterMapping

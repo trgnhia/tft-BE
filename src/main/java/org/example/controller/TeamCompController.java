@@ -26,4 +26,25 @@ public class TeamCompController {
         TeamCompResponse response = teamCompService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<TeamCompResponse>> update(@PathVariable Long id, @Valid @RequestBody TeamCompRequest request) {
+        TeamCompResponse response = teamCompService.update(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<TeamCompResponse>> patchUpdate(
+            @PathVariable Long id,
+            @RequestBody TeamCompRequest request) {
+        TeamCompResponse response = teamCompService.update(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+        teamCompService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }
