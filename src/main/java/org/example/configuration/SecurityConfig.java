@@ -40,6 +40,7 @@ public class SecurityConfig {
             "/auth/signin",
             "/auth/signup",
             "/auth/refresh",
+            "/users/**",
             "/swagger-resources",
             "/swagger-resources/**",
             "/swagger-ui/**",

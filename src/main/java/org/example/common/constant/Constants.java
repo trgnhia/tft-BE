@@ -76,5 +76,9 @@ public final class Constants {
         public static final String CHAMP_STATS_CRIT_CHANCE_MIN = "champ.stats.crit_chance.min";
         public static final String CHAMP_STATS_CRIT_CHANCE_MAX = "champ.stats.crit_chance.max";
 
+
+
+        public static final String DUPLICATE_USERNAME = "error.DUPLICATE_USERNAME";
+        public static final String DUPLICATE_EMAIL = "error.DUPLICATE_EMAIL";
     }
 }
