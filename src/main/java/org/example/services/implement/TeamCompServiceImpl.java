@@ -1,10 +1,8 @@
 package org.example.services.implement;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.constant.Constants;
-import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.dto.teamcomp.TeamCompRequest;
 import org.example.dto.teamcomp.TeamCompResponse;
@@ -15,13 +13,12 @@ import org.example.mapper.TeamCompMapper;
 import org.example.repositories.ChampRepository;
 import org.example.repositories.TeamCompRepository;
 import org.example.services.TeamCompService;
-import org.example.util.FilterUtil;
 import org.example.util.MessageUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestBody;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +34,7 @@ public class TeamCompServiceImpl implements TeamCompService {
     private final TeamCompRepository teamCompRepository;
     private final ChampRepository champRepository;
     private final TeamCompMapper teamCompMapper;
-    private final FilterUtil filterUtil;
+
     @Override
     @Transactional
     public TeamCompResponse create(TeamCompRequest request) {
@@ -67,8 +64,7 @@ public class TeamCompServiceImpl implements TeamCompService {
 
     @Override
     public TeamCompResponse getById(Long id) {
-        filterUtil.enableDeletedFilter();
-        TeamComp teamComp = teamCompRepository.findById(id)
+        TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
@@ -77,8 +73,7 @@ public class TeamCompServiceImpl implements TeamCompService {
 
     @Transactional
     public TeamCompResponse update(Long id, TeamCompRequest request) {
-        filterUtil.enableDeletedFilter();
-        TeamComp teamComp = teamCompRepository.findById(id)
+        TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
         teamCompMapper.updateEntity(request, teamComp);
