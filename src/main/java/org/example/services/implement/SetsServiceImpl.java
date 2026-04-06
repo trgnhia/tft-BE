@@ -25,8 +25,7 @@ public class SetsServiceImpl implements SetsService {
     public SetsResponse getSetById(Long id) {
         Sets sets = setRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)
-                ));
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)));
         return setsMapper.toSetsResponse(sets);
     }
 

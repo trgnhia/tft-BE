@@ -1,13 +1,12 @@
 package org.example.dto.champs;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.common.constant.Constants;
 
 @Data
 @Builder
@@ -15,20 +14,27 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateChampRequest {
 
-    @NotNull(message = "{champ.setId.not_null}")
+    @NotNull(message = "{" + Constants.MessageKey.CHAMP_SET_ID_NOT_NULL + "}")
     private Long setId;
 
-    @NotBlank(message = "{champ.slug.not_blank}")
-    @Size(max = 100, message = "{champ.slug.size}")
-    @Pattern(regexp = "^[a-z0-9-]+$", message = "{champ.slug.pattern}")
+    @NotNull(message = "{" + Constants.MessageKey.CHAMP_COST_NOT_NULL + "}")
+    @Min(value = 1, message = "{" + Constants.MessageKey.CHAMP_COST_MIN + "}")
+    @Max(value = 5, message = "{" + Constants.MessageKey.CHAMP_COST_MAX + "}")
+    private Integer cost;
+
+    @NotBlank(message = "{" + Constants.MessageKey.CHAMP_SLUG_NOT_BLANK + "}")
+    @Size(max = 100, message = "{" + Constants.MessageKey.CHAMP_SLUG_SIZE + "}")
+    @Pattern(regexp = "^[a-z0-9-]+$", message = "{" + Constants.MessageKey.CHAMP_SLUG_PATTERN + "}")
     private String slug;
 
-    @NotBlank(message = "{champ.name.not_blank}")
-    @Size(max = 255, message = "{champ.name.size}")
+    @NotBlank(message = "{" + Constants.MessageKey.CHAMP_NAME_NOT_BLANK + "}")
+    @Size(max = 255, message = "{" + Constants.MessageKey.CHAMP_NAME_SIZE + "}")
     private String name;
 
-    @Size(max = 500, message = "{champ.imageUrl.size}")
+    @Size(max = 500, message = "{" + Constants.MessageKey.CHAMP_IMAGE_URL_SIZE + "}")
     private String imageUrl;
 
-    private String stats;
+    @Valid
+    @NotNull(message = "{" + Constants.MessageKey.ERROR_INCOMPLETE_DATA + "}")
+    private ChampStatsRequest stats;
 }
