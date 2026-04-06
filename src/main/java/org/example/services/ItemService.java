@@ -1,0 +1,15 @@
+package org.example.services;
+
+import org.example.dto.item.ItemRequest;
+import org.example.dto.item.ItemResponse;
+
+import java.util.List;
+
+
+public interface ItemService {
+    ItemResponse create (ItemRequest request);
+    ItemResponse getItemById (Long id);
+    List<ItemResponse> getAllItem ();
+    ItemResponse update (Long id, ItemRequest request);
+    void delete (Long id);
+}

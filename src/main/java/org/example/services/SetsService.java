@@ -10,4 +10,5 @@ public interface SetsService {
     List<SetsResponse> getAllSet();
     SetsResponse create (SetsRequest request);
     SetsResponse update (Long id, SetsRequest request);
+    void delete (Long id);
 }

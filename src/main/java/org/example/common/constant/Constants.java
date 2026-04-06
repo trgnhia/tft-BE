@@ -11,18 +11,22 @@ public final class Constants {
     }
 
     public static final class MessageKey {
+        private MessageKey() {}
+
+        public static final String ERROR_ALREADY_EXISTS = "error.ALREADY_EXISTS";
+        public static final String ERROR_NOT_FOUND = "error.NOT_FOUND";
+        public static final String ENTITY_SETS = "entity.sets";
+        public static final String FIELD_ID = "field.id";
+        public static final String FIELD_SETS_NAME = "field.sets.name";
+        public static final String ENTITY_ITEM = "entity.item";
+        public static final String FIELD_ITEM_NAME = "field.item.name";
+
         public static final String ERROR_INCOMPLETE_DATA = "error.INCOMPLETE_DATA";
         public static final String CHAMP_COST_NOT_NULL = "champ.cost.not_null";
         public static final String CHAMP_COST_MIN = "champ.cost.min";
         public static final String CHAMP_COST_MAX = "champ.cost.max";
 
-        private MessageKey() {}
-        public static final String ERROR_NOT_FOUND = "error.NOT_FOUND";
-        public static final String ERROR_ALREADY_EXIST = "error.ALREADY_EXIST";
-
-
         // entity name
-        public static final String ENTITY_SETS = "entity.sets";
         public static final String ENTITY_CHAMP = "entity.champ";
         public static final String ENTITY_TRAIT = "entity.trait";
         public static final String ENTITY_USER = "entity.user";
@@ -30,7 +34,6 @@ public final class Constants {
 
 
         // field name
-        public static final String FIELD_SETS_NAME = "field.sets.name";
         public static final String FIELD_CHAMP_NAME = "field.champ.name";
         public static final String FIELD_CHAMP_SLUG = "field.champ.slug";
         public static final String FIELD_CHAMP_COST = "field.champ.cost";
@@ -47,7 +50,6 @@ public final class Constants {
         public static final String TRAIT_NOT_FOUND = "trait.not_found";
 
         //champ
-        public static final String CHAMP_NOT_FOUND = "champ.not_found";
         public static final String CHAMP_SLUG_NOT_FOUND = "champ.slug.not_found";
         public static final String CHAMP_SLUG_EXISTS = "champ.slug.already_exists";
         public static final String CHAMP_ID_NOT_NULL = "champ.id.not_null";

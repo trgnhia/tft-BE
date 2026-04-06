@@ -10,7 +10,6 @@ import org.example.common.entity.AuditableEntity;
 @Table(name = "set")
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Sets extends AuditableEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active;
