@@ -16,16 +16,20 @@ import org.example.repositories.SetsRepository;
 import org.example.services.ItemService;
 import org.example.util.MessageUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepo;
     private final ItemMapper itemMapper;
     private final SetsRepository setRepo;
+
     @Override
+    @Transactional
     public ItemResponse create(ItemRequest request) {
         Item item = itemMapper.toEntity(request);
         String normalizedName = normalizeName(request.getName());
@@ -51,17 +55,34 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemResponse> getAllItem() {
-        return itemRepo.findAll().stream()
+        return itemRepo.findAllWithSets().stream()
                 .map(itemMapper::toItemResponse)
                 .toList();
     }
 
     @Override
+    @Transactional
     public ItemResponse update(Long id, ItemRequest request) {
-        return null;
-    }
+        Item item = getById(id);
+        String normalizedName = normalizeName(request.getName());
+       // validateDuplicateNameForUpdate(normalizedName, id);
 
+        Sets sets = setRepo.findById(request.getSetId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
+                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                        String.valueOf(request.getSetId())
+                ));
+
+        itemMapper.updateEntity(request, item);
+        item.setName(normalizedName);
+        item.setSets(sets);
+
+        Item savedItem = itemRepo.save(item);
+        return itemMapper.toItemResponse(savedItem);
+    }
     @Override
+    @Transactional
     public void delete(Long id) {
         Item item = getById(id);
         if (item.isDeleted()) {
@@ -76,11 +97,13 @@ public class ItemServiceImpl implements ItemService {
         itemRepo.save(item);
     }
 
-    private Item getById (Long id) {
+    private Item getById(Long id) {
         return itemRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(Constants.MessageKey.ENTITY_ITEM,
-                        Constants.MessageKey.FIELD_ID,
-                        String.valueOf(id)));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
+                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                        String.valueOf(id)
+                ));
     }
     private String normalizeName(String name) {
         return name.trim();
@@ -89,8 +112,8 @@ public class ItemServiceImpl implements ItemService {
     private void validateDuplicateName(String name) {
         if (itemRepo.existsByName(name)) {
             throw new ConflictException(
-                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
-                    MessageUtils.getMessage(Constants.MessageKey.FIELD_SETS_NAME),
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
+                    MessageUtils.getMessage(Constants.MessageKey.FIELD_ITEM_NAME),
                     name
             );
         }

@@ -3,6 +3,8 @@ package org.example.core.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import org.example.common.constant.Constants;
+import org.springframework.http.HttpStatus;
+
 @Getter
 @Setter
 @Builder
