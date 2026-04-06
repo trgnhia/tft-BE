@@ -46,6 +46,21 @@ public final class Constants {
 
         //trait
         public static final String TRAIT_NOT_FOUND = "trait.not_found";
+        // Trait Validation & Error
+        public static final String TRAIT_SET_ID_NOT_NULL = "trait.setId.not_null";
+        public static final String TRAIT_SLUG_NOT_BLANK = "trait.slug.not_blank";
+        public static final String TRAIT_SLUG_SIZE = "trait.slug.size";
+        public static final String TRAIT_SLUG_PATTERN = "trait.slug.pattern";
+        public static final String TRAIT_NAME_NOT_BLANK = "trait.name.not_blank";
+        public static final String TRAIT_NAME_SIZE = "trait.name.size";
+        public static final String TRAIT_TYPE_NOT_BLANK = "trait.type.not_blank";
+        public static final String TRAIT_TYPE_SIZE = "trait.type.size";
+        public static final String TRAIT_ICON_URL_SIZE = "trait.iconUrl.size";
+        // Trait Breakpoint Validation
+        public static final String TRAIT_BREAKPOINT_COUNT_NOT_NULL = "trait.breakpoint.count.not_null";
+        public static final String TRAIT_BREAKPOINT_COUNT_MIN = "trait.breakpoint.count.min";
+        public static final String TRAIT_BREAKPOINT_COLOR_NOT_BLANK = "trait.breakpoint.color.not_blank";
+        public static final String TRAIT_BREAKPOINT_EFFECT_NOT_BLANK = "trait.breakpoint.effect.not_blank";
 
         //champ
         public static final String CHAMP_SLUG_NOT_FOUND = "champ.slug.not_found";
