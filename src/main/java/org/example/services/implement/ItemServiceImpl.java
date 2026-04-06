@@ -65,7 +65,7 @@ public class ItemServiceImpl implements ItemService {
     public ItemResponse update(Long id, ItemRequest request) {
         Item item = getById(id);
         String normalizedName = normalizeName(request.getName());
-       // validateDuplicateNameForUpdate(normalizedName, id);
+        validateDuplicateNameForUpdate(normalizedName, id);
 
         Sets sets = setRepo.findById(request.getSetId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -111,6 +111,16 @@ public class ItemServiceImpl implements ItemService {
 
     private void validateDuplicateName(String name) {
         if (itemRepo.existsByName(name)) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
+                    MessageUtils.getMessage(Constants.MessageKey.FIELD_ITEM_NAME),
+                    name
+            );
+        }
+    }
+
+    private void validateDuplicateNameForUpdate(String name, Long id) {
+        if (itemRepo.existsByNameAndIdNot(name, id)) {
             throw new ConflictException(
                     MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
                     MessageUtils.getMessage(Constants.MessageKey.FIELD_ITEM_NAME),

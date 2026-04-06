@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ItemRepository extends JpaRepository<Item, Long> {
     boolean existsByName (String name);
-
+    boolean existsByNameAndIdNot (String name, Long id);
     @Query("select i from Item i join fetch i.sets")
     List<Item> findAllWithSets();
 }

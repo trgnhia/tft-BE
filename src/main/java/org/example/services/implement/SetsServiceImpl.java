@@ -56,9 +56,7 @@ public class SetsServiceImpl implements SetsService {
         Sets existingSet = getById(id);
         String normalizedName = normalizeName(request.getName());
 
-        if (!existingSet.getName().equalsIgnoreCase(normalizedName)) {
-            validateDuplicateName(normalizedName);
-        }
+        validateDuplicateNameForUpdate(normalizedName, id);
 
         existingSet.setName(normalizedName);
         if (request.getIsActive() != null) {
@@ -106,5 +104,16 @@ public class SetsServiceImpl implements SetsService {
 
     private String normalizeName(String name) {
         return name.trim();
+    }
+
+
+    private void validateDuplicateNameForUpdate(String name, Long id) {
+        if (setRepo.existsByNameAndIdNot(name, id)) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
+                    MessageUtils.getMessage(Constants.MessageKey.FIELD_SETS_NAME),
+                    name
+            );
+        }
     }
 }
