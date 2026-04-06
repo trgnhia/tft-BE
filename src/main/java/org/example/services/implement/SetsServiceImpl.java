@@ -25,8 +25,7 @@ public class SetsServiceImpl implements SetsService {
     public SetsResponse getSetById(Long id) {
         Sets sets = setRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS),
-                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}));
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)));
         return setsMapper.toSetsResponse(sets);
     }
 
@@ -54,7 +53,7 @@ public class SetsServiceImpl implements SetsService {
     @Transactional
     public SetsResponse update(Long id, SetsRequest request) {
         Sets existingSet = setRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Set not found", new Object[]{Constants.MessageKey.ENTITY_CHAMP}));
+                .orElseThrow(() -> new ResourceNotFoundException("Set not found"));
         String normalizedName = request.getName().trim();
 
         if (!existingSet.getName().equalsIgnoreCase(normalizedName)
