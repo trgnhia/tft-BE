@@ -70,6 +70,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDetailedResponse updateUserProfile(Long userId, UpdateUserProfileRequest request) {
+        userBusinessValidator.validateUserUniqueness(request.userName(), request.email());
         User user = getOrThrowUser(userId);
         Role newRole = getOrThrowRole(request.roleId());
         user.setRole(newRole);
