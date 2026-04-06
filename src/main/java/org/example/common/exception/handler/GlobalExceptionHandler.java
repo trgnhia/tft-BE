@@ -135,10 +135,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
 
         String msg = MessageUtils.getMessage(
-                Constants.MessageKey.ERROR_NOT_FOUND,
-                ex.getMessage()
+                ERROR_LOG_PREFIX + ex.getErrorCode(),
+                (Object[]) ex.getArgs()
         );
-
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
     }
