@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface TeamCompRepository extends JpaRepository<TeamComp, Long> {
     Optional<TeamComp> findByIdAndDeletedFalse(Long id);
+    boolean existsByNameAndDeletedFalse(String name);
+    boolean existsByNameAndIdNotAndDeletedFalse(String name, Long id);
 }

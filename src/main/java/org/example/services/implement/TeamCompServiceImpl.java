@@ -3,6 +3,7 @@ package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.constant.Constants;
+import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.dto.teamcomp.TeamCompRequest;
 import org.example.dto.teamcomp.TeamCompResponse;
@@ -19,8 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,30 +38,44 @@ public class TeamCompServiceImpl implements TeamCompService {
     @Override
     @Transactional
     public TeamCompResponse create(TeamCompRequest request) {
+        if (teamCompRepository.existsByNameAndDeletedFalse(request.getName())) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
+                    request.getName()
+            );
+        }
         TeamComp teamComp = teamCompMapper.toEntity(request);
+        if (teamComp.getTeamCompChamps() != null) {
+            teamComp.getTeamCompChamps().clear();
+        }
+        TeamComp savedTeamComp = teamCompRepository.save(teamComp);
 
+        final Long teamCompId = savedTeamComp.getId();
 
         if (request.getChampionIds() != null && !request.getChampionIds().isEmpty()) {
-            List<Champ> foundChamps = champRepository.findAllById(request.getChampionIds());
 
+            Set<Long> uniqueChampIds = new HashSet<>(request.getChampionIds());
+            List<Champ> foundChamps = champRepository.findAllById(uniqueChampIds);
 
-            if (foundChamps.size() != request.getChampionIds().size()) {
-
+            if (foundChamps.size() != uniqueChampIds.size()) {
                 throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.CHAMP_NOT_FOUND));
             }
 
             List<TeamCompChamp> joinList = foundChamps.stream().map(champ -> {
                 TeamCompChamp tcc = new TeamCompChamp();
-                tcc.setTeamComp(teamComp);
+
+                tcc.setTeamCompId(teamCompId);
+                tcc.setChampionId(champ.getId());
+
+                tcc.setTeamComp(savedTeamComp);
                 tcc.setChamp(champ);
                 return tcc;
             }).collect(Collectors.toList());
 
-            teamComp.setTeamCompChamps(joinList);
+            savedTeamComp.setTeamCompChamps(joinList);
+            TeamComp finalTeamComp = teamCompRepository.save(savedTeamComp);
+            return teamCompMapper.toResponse(finalTeamComp);
         }
-
-
-        final TeamComp savedTeamComp = teamCompRepository.save(teamComp);
         return teamCompMapper.toResponse(savedTeamComp);
     }
 
@@ -80,20 +94,25 @@ public class TeamCompServiceImpl implements TeamCompService {
         TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
+        if (!teamComp.getName().equals(request.getName()) &&
+                teamCompRepository.existsByNameAndDeletedFalse(request.getName())) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
+                    request.getName()
+            );
+        }
 
         teamCompMapper.updateEntity(request, teamComp);
 
         if (request.getChampionIds() != null) {
-            List<Champ> champs = champRepository.findAllById(request.getChampionIds());
+            Set<Long> uniqueChampIds = new HashSet<>(request.getChampionIds());
+            List<Champ> champs = champRepository.findAllById(uniqueChampIds);
 
-
-            if (champs.size() != request.getChampionIds().size()) {
+            if (champs.size() != uniqueChampIds.size()) {
                 throw new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.CHAMP_NOT_FOUND));
             }
 
-            Set<Long> requestChampIds = request.getChampionIds().stream().collect(Collectors.toSet());
-
-            teamComp.getTeamCompChamps().removeIf(tcc -> !requestChampIds.contains(tcc.getChampionId()));
+            teamComp.getTeamCompChamps().removeIf(tcc -> !uniqueChampIds.contains(tcc.getChampionId()));
 
             Set<Long> existingChampIds = teamComp.getTeamCompChamps().stream()
                     .map(TeamCompChamp::getChampionId)
@@ -102,7 +121,7 @@ public class TeamCompServiceImpl implements TeamCompService {
             Map<Long, Champ> champMap = champs.stream()
                     .collect(Collectors.toMap(Champ::getId, c -> c));
 
-            for (Long champId : request.getChampionIds()) {
+            for (Long champId : uniqueChampIds) {
                 if (!existingChampIds.contains(champId)) {
                     Champ champ = champMap.get(champId);
                     if (champ != null) {
