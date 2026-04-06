@@ -40,25 +40,28 @@ public class TeamCompServiceImpl implements TeamCompService {
     public TeamCompResponse create(TeamCompRequest request) {
         TeamComp teamComp = teamCompMapper.toEntity(request);
 
-        final TeamComp savedTeamComp = teamCompRepository.save(teamComp);
 
         if (request.getChampionIds() != null && !request.getChampionIds().isEmpty()) {
             List<Champ> foundChamps = champRepository.findAllById(request.getChampionIds());
+
+
+            if (foundChamps.size() != request.getChampionIds().size()) {
+
+                throw new ResourceNotFoundException(MessageUtils.getMessage("error.NOT_FOUND", "Champion"));
+            }
+
             List<TeamCompChamp> joinList = foundChamps.stream().map(champ -> {
                 TeamCompChamp tcc = new TeamCompChamp();
-                tcc.setTeamCompId(savedTeamComp.getId());
-                tcc.setChampionId(champ.getId());
-                tcc.setTeamComp(savedTeamComp);
+                tcc.setTeamComp(teamComp);
                 tcc.setChamp(champ);
                 return tcc;
             }).collect(Collectors.toList());
-            if (savedTeamComp.getTeamCompChamps() == null) {
-                savedTeamComp.setTeamCompChamps(new ArrayList<>());
-            }
-            savedTeamComp.getTeamCompChamps().addAll(joinList);
 
-            teamCompRepository.save(savedTeamComp);
+            teamComp.setTeamCompChamps(joinList);
         }
+
+
+        final TeamComp savedTeamComp = teamCompRepository.save(teamComp);
         return teamCompMapper.toResponse(savedTeamComp);
     }
 
@@ -71,13 +74,22 @@ public class TeamCompServiceImpl implements TeamCompService {
         return teamCompMapper.toResponse(teamComp);
     }
 
+    @Override
     @Transactional
     public TeamCompResponse update(Long id, TeamCompRequest request) {
         TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
+
         teamCompMapper.updateEntity(request, teamComp);
+
         if (request.getChampionIds() != null) {
+            List<Champ> champs = champRepository.findAllById(request.getChampionIds());
+
+
+            if (champs.size() != request.getChampionIds().size()) {
+                throw new ResourceNotFoundException(MessageUtils.getMessage("error.NOT_FOUND", "Champion"));
+            }
 
             Set<Long> requestChampIds = request.getChampionIds().stream().collect(Collectors.toSet());
 
@@ -87,7 +99,6 @@ public class TeamCompServiceImpl implements TeamCompService {
                     .map(TeamCompChamp::getChampionId)
                     .collect(Collectors.toSet());
 
-            List<Champ> champs = champRepository.findAllById(request.getChampionIds());
             Map<Long, Champ> champMap = champs.stream()
                     .collect(Collectors.toMap(Champ::getId, c -> c));
 
@@ -106,20 +117,19 @@ public class TeamCompServiceImpl implements TeamCompService {
                 }
             }
         }
-        TeamComp updatedTeamComp = teamCompRepository.save(teamComp);
 
+        TeamComp updatedTeamComp = teamCompRepository.save(teamComp);
         return teamCompMapper.toResponse(updatedTeamComp);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        TeamComp teamComp = teamCompRepository.findById(id)
+        TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
 
         teamComp.setDeleted(true);
-
         teamCompRepository.save(teamComp);
     }
 
