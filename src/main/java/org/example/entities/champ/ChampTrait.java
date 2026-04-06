@@ -3,7 +3,7 @@ package org.example.entities.champ;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.common.entity.BaseEntity;
-import org.example.entities.Trait;
+import org.example.entities.trait.Trait;
 
 @Entity
 @Table(
