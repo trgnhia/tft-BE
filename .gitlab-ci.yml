@@ -44,7 +44,7 @@ deploy_local:
 
     - echo "Chạy app ngầm (background) và ghi log ra $LOG_PATH ..."
     # Lệnh 'nohup ... &' giúp ứng dụng tiếp tục chạy ngầm ngay cả khi Pipeline kết thúc
-    - nohup java -jar $JAR_FILE > $LOG_PATH 2>&1 &
+    - nohup java -DPG_HOST=$PG_HOST -DPG_PORT=$PG_PORT -DPG_DB=$PG_DB -DPG_USER=$PG_USER -DPG_PASS=$PG_PASS -jar $JAR_FILE > $LOG_PATH 2>&1 &
 
     - echo "Đợi 10 giây để check xem app có lỗi lúc khởi động không..."
     - sleep 10
