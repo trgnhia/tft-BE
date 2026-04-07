@@ -37,14 +37,14 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('USER_CREATE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody @Valid CreateUserRequest request) {
         var created = userService.createUser(request);
         return ResponseEntity.ok(ApiResponse.success(created));
     }
 
     @PatchMapping("/{userId}/role")
-    @PreAuthorize("hasAuthority('USER_UPDATE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(@PathVariable Long userId, @RequestBody @Valid UpdateUserRoleRequest request) {
         var saved = userService.updateUserRole(userId, request);
         return ResponseEntity.ok(ApiResponse.success(saved));
