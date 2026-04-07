@@ -2,6 +2,7 @@ package org.example.mapper;
 
 import org.example.dto.notification.NotificationCreateCommand;
 import org.example.dto.notification.NotificationResponse;
+
 import org.example.entities.Notification;
 import org.mapstruct.Mapper;
 

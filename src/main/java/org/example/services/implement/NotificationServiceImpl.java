@@ -10,6 +10,8 @@ import org.example.services.NotificationService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
@@ -22,10 +24,26 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notification = noticeMapper.toEntity(notice);
         Notification saved = noticeRepo.save(notification);
         NotificationResponse response = noticeMapper.toResponse(saved);
+        //tất cả client subscribe /topic/cms-notifications sẽ nhận
         messagingTemplate.convertAndSend(
                 "/topic/cms-notifications",
                 response
         );
         return response;
+    }
+    @Override
+    public List<NotificationResponse> getTop10Notifications() {
+        return noticeRepo.findTop10ByOrderByCreatedAtDesc()
+                .stream()
+                .map(noticeMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<NotificationResponse> getAllNotifications() {
+        return noticeRepo.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(noticeMapper::toResponse)
+                .toList();
     }
 }
