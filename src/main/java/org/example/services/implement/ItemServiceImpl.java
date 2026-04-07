@@ -28,6 +28,41 @@ public class ItemServiceImpl implements ItemService {
     private final ItemMapper itemMapper;
     private final SetsRepository setRepo;
 
+
+    @Override
+    public List<ItemResponse> getAllPublishedItem() {
+        return itemRepo.findAllActiveWithSets().stream()
+                .map(itemMapper::toItemResponse)
+                .toList();
+    }
+
+    @Override
+    public ItemResponse getActiveItemById(Long id) {
+        Item item = itemRepo.findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
+                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                        String.valueOf(id)
+                ));
+        return itemMapper.toItemResponse(item);
+    }
+
+    // ---------- CMS SERVICES ----------
+
+    @Override
+    public ItemResponse getItemById(Long id) {
+        Item item = getById(id);
+        return itemMapper.toItemResponse(item);
+    }
+
+    @Override
+    public List<ItemResponse> getAllItem() {
+        return itemRepo.findAllWithSets().stream()
+                .map(itemMapper::toItemResponse)
+                .toList();
+    }
+
+
     @Override
     @Transactional
     public ItemResponse create(ItemRequest request) {
@@ -44,20 +79,6 @@ public class ItemServiceImpl implements ItemService {
 
         Item savedItem = itemRepo.save(item);
         return itemMapper.toItemResponse(savedItem);
-    }
-
-
-    @Override
-    public ItemResponse getItemById(Long id) {
-        Item item = getById(id);
-        return itemMapper.toItemResponse(item);
-    }
-
-    @Override
-    public List<ItemResponse> getAllItem() {
-        return itemRepo.findAllWithSets().stream()
-                .map(itemMapper::toItemResponse)
-                .toList();
     }
 
     @Override

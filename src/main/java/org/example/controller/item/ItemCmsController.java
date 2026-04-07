@@ -1,4 +1,4 @@
-package org.example.controller;
+package org.example.controller.item;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -7,35 +7,31 @@ import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 import org.example.services.ItemService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/items")
+@RequestMapping("/cms/items")
 @RequiredArgsConstructor
-public class ItemController {
+@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+public class ItemCmsController {
 
     private final ItemService itemService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<ItemResponse>>> getAll() {
+        return ResponseEntity.ok(
+                ApiResponse.success(itemService.getAllItem())
+        );
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<ItemResponse>> create(
             @Valid @RequestBody ItemRequest request
     ) {
-        ItemResponse res = itemService.create(request);
-        return ResponseEntity.ok(ApiResponse.success(res));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ItemResponse>> getById(@PathVariable Long id) {
-        ItemResponse res = itemService.getItemById(id);
-        return ResponseEntity.ok(ApiResponse.success(res));
-    }
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<ItemResponse>>> getAll() {
-        List<ItemResponse> res = itemService.getAllItem();
-        return ResponseEntity.ok(ApiResponse.success(res));
+        return ResponseEntity.ok(ApiResponse.success(itemService.create(request)));
     }
 
     @PutMapping("/{id}")
@@ -43,10 +39,10 @@ public class ItemController {
             @PathVariable Long id,
             @Valid @RequestBody ItemRequest request
     ) {
-        ItemResponse res = itemService.update(id, request);
-        return ResponseEntity.ok(ApiResponse.success(res));
+        return ResponseEntity.ok(ApiResponse.success(itemService.update(id, request)));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         itemService.delete(id);

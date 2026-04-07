@@ -30,6 +30,8 @@ public final class Constants {
         public static final String ENTITY_CHAMP = "entity.champ";
         public static final String ENTITY_TRAIT = "entity.trait";
         public static final String ENTITY_USER = "entity.user";
+        public static final String ENTITY_TEAMS = "entity.teams";
+
 
         // field name
         public static final String FIELD_CHAMP_NAME = "field.champ.name";
@@ -76,5 +78,9 @@ public final class Constants {
         public static final String CHAMP_STATS_CRIT_CHANCE_MIN = "champ.stats.crit_chance.min";
         public static final String CHAMP_STATS_CRIT_CHANCE_MAX = "champ.stats.crit_chance.max";
 
+
+
+        public static final String DUPLICATE_USERNAME = "error.DUPLICATE_USERNAME";
+        public static final String DUPLICATE_EMAIL = "error.DUPLICATE_EMAIL";
     }
 }

@@ -16,4 +16,5 @@ public class SetsResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private String createdByName;
+    private boolean deleted;
 }

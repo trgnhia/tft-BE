@@ -65,10 +65,4 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cleanRefreshTokenCookie.toString())
                 .body(ApiResponse.success("Logout success"));
     }
-
-    @GetMapping("/proteced")
-    public ResponseEntity<ApiResponse<String>> protectedEndPoint() {
-        return ResponseEntity.ok(ApiResponse.success("Get Protected"));
-    }
-
 }

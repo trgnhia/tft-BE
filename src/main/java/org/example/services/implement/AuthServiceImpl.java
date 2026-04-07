@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.enums.ErrorCode;
 import org.example.common.enums.RoleCode;
-import org.example.common.exception.ConflictException;
 import org.example.common.exception.ServerException;
 import org.example.dto.auth.AuthToken;
 import org.example.dto.auth.LoginRequest;
@@ -17,6 +16,7 @@ import org.example.security.SecurityUser;
 import org.example.services.AuthService;
 import org.example.util.JwtUtil;
 import org.example.util.SecurityUtil;
+import org.example.validators.UserBusinessValidator;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +36,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
+    private final UserBusinessValidator userBusinessValidator;
     private final JwtUtil jwtUtil;
     private final SecurityUtil securityUtil;
     private final UserRepository userRepository;
@@ -69,9 +70,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void signUp(SignUpRequest request) {
-        if (userRepository.existsByUsername(request.userName())) {
-            throw new ConflictException("Username");
-        }
+        userBusinessValidator.validateUserUniqueness(request.userName(), request.email());
         User user = buildUser(request);
         userRepository.save(user);
     }

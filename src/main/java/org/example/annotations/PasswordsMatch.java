@@ -11,7 +11,7 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PasswordsMatch {
-    String message() default "error.PASSWORD_MISMATCH";
+    String message() default "{error.PASSWORD_MISMATCH}";
 
     Class<?>[] groups() default {};
 
