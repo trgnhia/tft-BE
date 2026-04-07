@@ -21,7 +21,8 @@ target/
 .settings
 .springBeans
 .sts4-cache
-
+.env
+*.env
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -34,6 +35,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+## evironment
+.env
 
 ### Mac OS ###
 .DS_Store

@@ -4,7 +4,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -16,6 +18,8 @@ import java.time.Instant;
 
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 public abstract class AuditableEntity extends BaseEntity {
@@ -35,7 +39,6 @@ public abstract class AuditableEntity extends BaseEntity {
     @Column(name = "updated_by")
     @LastModifiedBy
     private Long updatedBy;
-
 
     @Column(nullable = false, name = "deleted")
     private boolean deleted = false;
