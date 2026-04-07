@@ -1,0 +1,52 @@
+image: maven:3.8.5-openjdk-17
+
+stages:
+  - build
+  - deploy
+
+build_job:
+  stage: build
+  tags:
+    - ubuntu-deploy
+  script:
+    - echo "Đang build dự án trên máy Ubuntu..."
+    # Cấp quyền thực thi cho Maven wrapper trên Linux
+    - chmod +x mvnw
+    - ./mvnw clean package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+
+deploy_local:
+  stage: deploy
+  tags:
+    - ubuntu-deploy
+  only:
+    - dev
+  script:
+    - echo "Kiểm tra và dọn dẹp port 8888..."
+    # Dùng lsof để tìm PID đang giữ port 8888 và kill nó
+    - PID=$(lsof -t -i:8888) || true
+    - >
+      if [ ! -z "$PID" ]; then
+        kill -9 $PID
+        echo "Đã đóng tiến trình cũ (PID: $PID) trên port 8888"
+      else
+        echo "Port 8888 đang trống."
+      fi
+
+    - echo "Bắt đầu deploy ứng dụng mới..."
+    # Lấy đường dẫn file jar đầu tiên tìm thấy
+    - JAR_FILE=$(ls target/*.jar | head -n 1)
+
+    - echo "Cấu hình thư mục log..."
+    - LOG_PATH="/tmp/app_log.txt"
+
+    - echo "Chạy app ngầm (background) và ghi log ra $LOG_PATH ..."
+    # Lệnh 'nohup ... &' giúp ứng dụng tiếp tục chạy ngầm ngay cả khi Pipeline kết thúc
+    - nohup java -jar $JAR_FILE > $LOG_PATH 2>&1 &
+
+    - echo "Đợi 10 giây để check xem app có lỗi lúc khởi động không..."
+    - sleep 10
+    - echo "=== 30 DÒNG LOG KHỞI ĐỘNG CỦA ỨNG DỤNG ==="
+    - tail -n 30 $LOG_PATH
