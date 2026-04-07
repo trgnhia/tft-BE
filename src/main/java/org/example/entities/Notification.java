@@ -9,13 +9,15 @@ import org.example.common.entity.BaseEntity;
 import org.example.common.enums.NotificationTargetType;
 import org.example.common.enums.NotificationType;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
 @Entity
-@Table(name = "notification")
+@Table(name = "notifications")
 @Getter
 @Setter
+@EntityListeners(AuditingEntityListener.class)
 @AllArgsConstructor
 @NoArgsConstructor
 public class Notification extends BaseEntity {
