@@ -40,5 +40,5 @@ public class CreateTraitRequest {
 
     @Valid
     @NotNull(message = "{" + Constants.MessageKey.ERROR_INCOMPLETE_DATA + "}")
-    private List<TraitBreakpoint> breakpoints;
+    private List<TraitBreakPointRequest> breakpoints;
 }

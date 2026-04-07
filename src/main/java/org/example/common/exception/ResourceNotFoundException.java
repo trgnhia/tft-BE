@@ -19,4 +19,6 @@ public class ResourceNotFoundException extends ServerException {
                 Arrays.stream(objects).map(String::valueOf).toArray(String[]::new)
         );
     }
+
+
 }

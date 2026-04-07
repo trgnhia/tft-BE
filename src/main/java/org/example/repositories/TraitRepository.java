@@ -4,6 +4,7 @@ import org.example.entities.trait.Trait;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,8 @@ public interface TraitRepository extends JpaRepository<Trait, Long> {
 
     Optional<Trait> findById(Long id);
 
+    Optional<Trait> findByIdAndDeletedFalse(Long id);
+    Optional<Trait> findBySlugAndDeletedFalse(String Slug);
     Optional<Trait> findBySlug(String slug);
 
     @Query("""
@@ -38,4 +41,8 @@ public interface TraitRepository extends JpaRepository<Trait, Long> {
 
     @Query(value = "SELECT * FROM traits WHERE id = :id", nativeQuery = true)
     Optional<Trait> findByIdAdmin(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE Trait t SET t.deleted = false WHERE t.id = :id")
+    void restoreById(@Param("id") Long id);
 }

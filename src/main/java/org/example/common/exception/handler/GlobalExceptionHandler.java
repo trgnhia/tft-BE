@@ -47,7 +47,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ex.getArgs(),
                 "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, ex.getErrorCode().name(), ex.getMessage()), ex.getStatus()
+                ApiResponse.error(msg, ex.getErrorCode().getCode(), ex.getMessage()), ex.getStatus()
         );
     }
 
@@ -69,7 +69,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataException(DataException ex) {
         log.error("DataException Error ", ex);
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + ex.getErrorCode(),
+                ERROR_LOG_PREFIX + ex.getErrorCode().getCode(),
                 ex.getArgs(),
                 "");
         return new ResponseEntity<>(
@@ -97,11 +97,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("AccessDeniedException Error ", ex);
         ErrorCode forbiddenCode = ErrorCode.PERMISSION_DENIED;
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + forbiddenCode.name(),
+                ERROR_LOG_PREFIX + forbiddenCode.getCode(),
                 null,
                 "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, forbiddenCode.name()), HttpStatus.FORBIDDEN
+                ApiResponse.error(msg, forbiddenCode.getCode()), HttpStatus.FORBIDDEN
         );
     }
 
@@ -109,9 +109,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
         log.error("Authentication Error ", ex);
         ErrorCode unauthorize = ErrorCode.UNAUTHORIZED;
-        String msg = MessageUtils.getMessage(ERROR_LOG_PREFIX + unauthorize.name(), null, "");
+        String msg = MessageUtils.getMessage(ERROR_LOG_PREFIX + unauthorize.getCode(), null, "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, unauthorize.name()), HttpStatus.UNAUTHORIZED
+                ApiResponse.error(msg, unauthorize.getCode()), HttpStatus.UNAUTHORIZED
         );
     }
 
@@ -139,7 +139,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 null,
                 "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, unexpectedCode.name()), HttpStatus.INTERNAL_SERVER_ERROR
+                ApiResponse.error(msg, unexpectedCode.getCode()), HttpStatus.INTERNAL_SERVER_ERROR
         );
     }
 
@@ -148,7 +148,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
 
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + ex.getErrorCode(),
+                ERROR_LOG_PREFIX + ex.getErrorCode().getCode(),
                 (Object[]) ex.getArgs()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

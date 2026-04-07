@@ -1,9 +1,11 @@
 package org.example.mapper;
 
 import org.example.dto.trait.CreateTraitRequest;
+import org.example.dto.trait.TraitBreakPointRequest;
 import org.example.dto.trait.TraitResponse;
 import org.example.dto.trait.UpdateTraitRequest;
 import org.example.entities.trait.Trait;
+import org.example.entities.trait.TraitBreakpoint;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -33,4 +35,5 @@ public interface TraitMapper {
     void updateEntity(UpdateTraitRequest request, @MappingTarget Trait trait);
 
     TraitResponse toResponse(Trait trait);
+    TraitBreakpoint toBreakpointEntity(TraitBreakPointRequest request);
 }
