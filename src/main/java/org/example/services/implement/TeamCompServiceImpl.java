@@ -12,7 +12,7 @@ import org.example.entities.TeamComp;
 import org.example.entities.TeamCompChamp;
 import org.example.mapper.TeamCompMapper;
 import org.example.repositories.ChampRepository;
-import org.example.repositories.TeamCompRepository;
+import org.example.repositories.teamcomp.TeamCompRepository;
 import org.example.services.TeamCompService;
 import org.example.util.MessageUtils;
 import org.springframework.data.domain.Page;
