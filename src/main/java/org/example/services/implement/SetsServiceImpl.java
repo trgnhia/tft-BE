@@ -24,16 +24,19 @@ public class SetsServiceImpl implements SetsService {
     private final SetsRepository setRepo;
     private final SetsMapper setsMapper;
 
-    @Override
-    public SetsResponse getSetById(Long id) {
-        Sets sets = getById(id);
-        return setsMapper.toSetsResponse(sets);
-    }
 
     @Override
     public List<SetsResponse> getAllPublishedSet() {
         List<Sets> sets = setRepo.findAllByDeletedFalse();
         return setsMapper.toListSetsResponse(sets);
+    }
+
+    // ---------- CMS SERVICES ----------
+
+    @Override
+    public SetsResponse getSetById(Long id) {
+        Sets sets = getById(id);
+        return setsMapper.toSetsResponse(sets);
     }
 
     @Override

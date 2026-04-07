@@ -6,6 +6,7 @@ import org.example.dto.notification.NotificationCreateCommand;
 import org.example.dto.notification.NotificationResponse;
 import org.example.services.NotificationService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/notifications")
+@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
 public class NotificationController {
 
     private final NotificationService notificationService;
