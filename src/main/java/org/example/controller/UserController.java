@@ -51,18 +51,21 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserDetailedResponse>> updateUserProfile(@PathVariable Long userId, @RequestBody @Valid UpdateUserProfileRequest request) {
         var updated = userService.updateUserProfile(userId, request);
         return ResponseEntity.ok(ApiResponse.success(updated));
     }
 
     @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserDetailedResponse>> deleteUser(@PathVariable Long userId) {
         var deleted = userService.deleteUserById(userId);
         return ResponseEntity.ok(ApiResponse.success(deleted));
     }
 
     @PatchMapping("/{userId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserDetailedResponse>> updateStatus(@PathVariable Long userId, @RequestBody @Valid UpdateAccountStatusRequest request) {
         var result = userService.updateStatus(userId, request);
         return ResponseEntity.ok(ApiResponse.success(result));
