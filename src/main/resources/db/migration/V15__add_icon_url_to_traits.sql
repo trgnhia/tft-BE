@@ -1,0 +1,2 @@
+ALTER TABLE traits
+    ADD COLUMN IF NOT EXISTS icon_url TEXT;
