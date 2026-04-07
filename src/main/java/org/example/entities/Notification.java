@@ -1,13 +1,13 @@
 package org.example.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.example.common.entity.BaseEntity;
+import org.example.common.enums.NotificationTargetType;
+import org.example.common.enums.NotificationType;
 
 import java.time.Instant;
 
@@ -18,9 +18,12 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Notification extends BaseEntity {
-    @Column(name = "title", nullable = false, length = 255)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 50)
+    private NotificationType type;
+    @Column(nullable = false, length = 255)
     private String title;
-    @Column(name = "content", nullable = false, length = 1000)
+    @Column(nullable = false, length = 1000)
     private String content;
     @Column(name = "target_id", nullable = false)
     private Long targetId;
@@ -28,4 +31,7 @@ public class Notification extends BaseEntity {
     private Long createdBy;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", nullable = false, length = 50)
+    private NotificationTargetType targetType;
 }

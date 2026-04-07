@@ -7,8 +7,8 @@ public enum NotificationType {
     ITEM_UPDATED,
     TRAIT_CREATED,
     TRAIT_UPDATED,
-    SETS_CREATED,
-    SETS_UPDATED,
+    SET_CREATED,
+    SET_UPDATED,
     TEAM_COMP_CREATED,
     TEAM_COMP_UPDATED
 }
