@@ -18,7 +18,7 @@ public class Item extends AuditableEntity {
     @JoinColumn(name = "set_id", nullable = false)
     private Sets sets;
     private String name;
-    @Column(name = "image_url")
+    @Column(name = "image_url", nullable = false)
     private String imageUrl;
     @Type(JsonBinaryType.class)
     @Column(name = "stats", columnDefinition = "jsonb")
