@@ -5,7 +5,6 @@ import org.example.dto.item.ItemResponse;
 
 import java.util.List;
 
-
 public interface ItemService {
     ItemResponse create (ItemRequest request);
     ItemResponse getItemById (Long id);

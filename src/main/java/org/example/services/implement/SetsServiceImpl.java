@@ -31,6 +31,12 @@ public class SetsServiceImpl implements SetsService {
     }
 
     @Override
+    public List<SetsResponse> getAllPublishedSet() {
+        List<Sets> sets = setRepo.findAllByDeletedFalse();
+        return setsMapper.toListSetsResponse(sets);
+    }
+
+    @Override
     public List<SetsResponse> getAllSet() {
         List<Sets> sets = setRepo.findAll();
         return setsMapper.toListSetsResponse(sets);
