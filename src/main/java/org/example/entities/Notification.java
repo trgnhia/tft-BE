@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.example.common.entity.BaseEntity;
 import org.example.common.enums.NotificationTargetType;
 import org.example.common.enums.NotificationType;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.time.Instant;
 
@@ -29,6 +30,7 @@ public class Notification extends BaseEntity {
     private Long targetId;
     @Column(name = "created_by", nullable = false, updatable = false)
     private Long createdBy;
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     @Enumerated(EnumType.STRING)
