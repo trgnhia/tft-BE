@@ -3,6 +3,7 @@ package org.example.controller.sets;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
+import org.example.core.api.PageResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.services.SetsService;
@@ -21,9 +22,12 @@ public class SetsCmsController {
     private final SetsService setsService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SetsResponse>>> getAllSetCms() {
+    public ResponseEntity<ApiResponse<PageResponse<SetsResponse>>> getAllSet(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         return ResponseEntity.ok(
-                ApiResponse.success(setsService.getAllSet())
+                ApiResponse.success(setsService.getAllSet(page, size))
         );
     }
 

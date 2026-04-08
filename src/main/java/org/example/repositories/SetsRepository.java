@@ -1,6 +1,8 @@
 package org.example.repositories;
 
 import org.example.entities.Sets;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -9,4 +11,5 @@ public interface SetsRepository extends JpaRepository<Sets, Long> {
     boolean existsByName (String name);
     boolean existsByNameAndIdNot (String name, Long id);
     List<Sets> findAllByDeletedFalse();
+    Page<Sets> findAllByDeletedFalse(Pageable pageable);
 }

@@ -1,5 +1,6 @@
 package org.example.services;
 
+import org.example.core.api.PageResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 
@@ -7,7 +8,7 @@ import java.util.List;
 
 public interface SetsService {
     SetsResponse getSetById (Long id);
-    List<SetsResponse> getAllSet();
+    PageResponse<SetsResponse> getAllSet(int page, int size);
     List<SetsResponse> getAllPublishedSet();
     SetsResponse create (SetsRequest request);
     SetsResponse update (Long id, SetsRequest request);

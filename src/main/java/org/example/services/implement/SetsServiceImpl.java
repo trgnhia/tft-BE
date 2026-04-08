@@ -4,14 +4,20 @@ import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
+import org.example.core.api.PageResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.entities.Sets;
 
 import org.example.mapper.SetsMapper;
+import org.example.repositories.ItemRepository;
 import org.example.repositories.SetsRepository;
 import org.example.services.SetsService;
 import org.example.util.MessageUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -22,6 +28,7 @@ import java.util.List;
 public class SetsServiceImpl implements SetsService {
 
     private final SetsRepository setRepo;
+    private final ItemRepository itemRepo;
     private final SetsMapper setsMapper;
 
 
@@ -40,9 +47,11 @@ public class SetsServiceImpl implements SetsService {
     }
 
     @Override
-    public List<SetsResponse> getAllSet() {
-        List<Sets> sets = setRepo.findAll();
-        return setsMapper.toListSetsResponse(sets);
+    public PageResponse<SetsResponse> getAllSet(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Sets> setsPage = setRepo.findAllByDeletedFalse(pageable);
+        Page<SetsResponse> responsePage = setsPage.map(setsMapper::toSetsResponse);
+        return PageResponse.from(responsePage);
     }
 
     @Override
@@ -89,6 +98,7 @@ public class SetsServiceImpl implements SetsService {
             );
         }
         sets.setDeleted(true);
+        itemRepo.softDeleteBySetId(id);
         setRepo.save(sets);
     }
 

@@ -6,6 +6,7 @@ import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
+import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 import org.example.entities.Sets;
@@ -15,6 +16,10 @@ import org.example.repositories.ItemRepository;
 import org.example.repositories.SetsRepository;
 import org.example.services.ItemService;
 import org.example.util.MessageUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +65,23 @@ public class ItemServiceImpl implements ItemService {
         return itemRepo.findAllWithSets().stream()
                 .map(itemMapper::toItemResponse)
                 .toList();
+    }
+
+
+    @Override
+    public PageResponse<ItemResponse> getItems(int page, int size, String keyword, Long setId) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        String normalizedKeyword = (keyword == null || keyword.trim().isEmpty())
+                ? null
+                : keyword.trim();
+
+        Page<Item> itemPage = itemRepo.searchItems(normalizedKeyword, setId, pageable);
+        Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
+        return PageResponse.from(responsePage);
     }
 
 
