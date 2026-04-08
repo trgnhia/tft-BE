@@ -31,11 +31,11 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     void softDeleteBySetId(@Param("setId") Long setId);
 
     @Query("""
-        select i from Item i
-        where i.deleted = false
-          and (:keyword is null or lower(i.name) like lower(concat('%', :keyword, '%')))
-          and (:setId is null or i.sets.id = :setId)
-    """)
+    select i from Item i
+    where i.deleted = false
+      and (:keyword is null or lower(i.name) like lower(concat('%', :keyword, '%')))
+      and (:setId is null or i.sets.id = :setId)
+""")
     Page<Item> searchItems(@Param("keyword") String keyword,
                            @Param("setId") Long setId,
                            Pageable pageable);

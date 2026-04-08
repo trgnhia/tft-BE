@@ -63,7 +63,6 @@ public class SetsServiceImpl implements SetsService {
 
         Sets sets = setsMapper.toEntity(request);
         sets.setName(normalizedName);
-        sets.setActive(request.getIsActive() == null || request.getIsActive());
         Sets savedSets = setRepo.save(sets);
         return setsMapper.toSetsResponse(savedSets);
     }
@@ -77,10 +76,6 @@ public class SetsServiceImpl implements SetsService {
         validateDuplicateNameForUpdate(normalizedName, id);
 
         existingSet.setName(normalizedName);
-        if (request.getIsActive() != null) {
-            existingSet.setActive(request.getIsActive());
-        }
-
         Sets updatedSet = setRepo.save(existingSet);
         return setsMapper.toSetsResponse(updatedSet);
     }
