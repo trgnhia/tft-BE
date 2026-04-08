@@ -84,9 +84,29 @@ public class CmsLogInterceptor implements HandlerInterceptor {
             realLog.setEndTime(endTime);
             realLog.setDurationMs(durationMs);
 
+            String errorMessage = null;
             if (ex != null) {
-                realLog.setErrorMessage(ex.getMessage());
+                errorMessage = ex.getMessage();
+            } else {
+                // Móc lỗi từ GlobalExceptionHandler ra
+                Object customError = request.getAttribute("errorMessage");
+                if (customError != null) {
+                    errorMessage = customError.toString();
+                } else {
+                    Object defaultError = request.getAttribute("jakarta.servlet.error.message");
+                    if (defaultError != null && !defaultError.toString().isBlank()) {
+                        errorMessage = defaultError.toString();
+                    }
+                }
             }
+
+            // Cắt bớt nếu lỗi quá dài tránh tràn DB
+            if (errorMessage != null && errorMessage.length() > 500) {
+                errorMessage = errorMessage.substring(0, 497) + "...";
+            }
+
+            // Ghi lỗi vào DB
+            realLog.setErrorMessage(errorMessage);
 
             // 5. Đẩy vào Queue
             internalLogQueue.push(realLog);
