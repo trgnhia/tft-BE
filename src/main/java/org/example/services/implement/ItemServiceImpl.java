@@ -12,6 +12,8 @@ import org.example.dto.item.ItemResponse;
 import org.example.entities.Sets;
 import org.example.entities.item.Item;
 import org.example.mapper.ItemMapper;
+import org.example.repositories.ChampItemRecommendRepository;
+import org.example.repositories.ChampRepository;
 import org.example.repositories.ItemRepository;
 import org.example.repositories.SetsRepository;
 import org.example.services.ItemService;
@@ -32,7 +34,7 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepo;
     private final ItemMapper itemMapper;
     private final SetsRepository setRepo;
-
+    private final ChampItemRecommendRepository champItemRecommendRepo;
 
     @Override
     public List<ItemResponse> getAllPublishedItem() {
@@ -137,6 +139,7 @@ public class ItemServiceImpl implements ItemService {
             );
         }
         item.setDeleted(true);
+        champItemRecommendRepo.softDeleteByItemId(id);
         itemRepo.save(item);
     }
 
