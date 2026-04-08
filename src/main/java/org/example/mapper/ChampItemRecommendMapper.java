@@ -13,4 +13,17 @@ public interface ChampItemRecommendMapper {
     @Mapping(target = "itemName", source = "item.name")
     ChampItemRecommendResponse toResponse(ChampItemRecommend entity);
 
+    @Mapping(target = "item", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    ChampItemRecommend toEntity(ChampItemRecommendRequest request);
+
+
+    @Mapping(target = "item", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    void updateEntity(ChampItemRecommendRequest request, @MappingTarget ChampItemRecommend champItemRecommend);
+
 }
