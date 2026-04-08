@@ -2,9 +2,7 @@ package org.example.common.exception.handler;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-
 import lombok.extern.slf4j.Slf4j;
-import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
@@ -47,7 +45,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ex.getArgs(),
                 "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, ex.getErrorCode().name(), ex.getMessage()), ex.getStatus()
+                ApiResponse.error(msg, ex.getErrorCode().getCode(), ex.getMessage()), ex.getStatus()
         );
     }
 
@@ -101,7 +99,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 null,
                 "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, forbiddenCode.name()), HttpStatus.FORBIDDEN
+                ApiResponse.error(msg, forbiddenCode.getCode()), HttpStatus.FORBIDDEN
         );
     }
 
@@ -111,7 +109,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode unauthorize = ErrorCode.UNAUTHORIZED;
         String msg = MessageUtils.getMessage(ERROR_LOG_PREFIX + unauthorize.name(), null, "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, unauthorize.name()), HttpStatus.UNAUTHORIZED
+                ApiResponse.error(msg, unauthorize.getCode()), HttpStatus.UNAUTHORIZED
         );
     }
 
@@ -139,7 +137,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 null,
                 "");
         return new ResponseEntity<>(
-                ApiResponse.error(msg, unexpectedCode.name()), HttpStatus.INTERNAL_SERVER_ERROR
+                ApiResponse.error(msg, unexpectedCode.getCode()), HttpStatus.INTERNAL_SERVER_ERROR
         );
     }
 
