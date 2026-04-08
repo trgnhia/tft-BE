@@ -45,7 +45,10 @@ public class SecurityConfig {
             "/swagger-resources",
             "/swagger-resources/**",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/v3/api-docs",
+            "/webjars/**"
     };
 
     private static final String[] IGNORE_CSRF_ENDPOINTS = {
