@@ -2,6 +2,7 @@ package org.example.services.implement;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.common.constant.Constants;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.dto.champ_item_recommend.ChampItemRecommendRequest;
@@ -12,6 +13,7 @@ import org.example.mapper.ChampItemRecommendMapper;
 import org.example.repositories.ChampItemRecommendRepository;
 import org.example.repositories.ItemRepository;
 import org.example.services.ChampItemRecommendService;
+import org.example.util.MessageUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,6 +28,18 @@ public class ChampItemRecommendServiceImpl implements ChampItemRecommendService 
     private final ChampItemRecommendMapper mapper;
     private final ItemRepository itemRepo;
 
+    // ---------- PUBLIC SERVICES ----------
+
+    @Override
+    public List<ChampItemRecommendResponse> getPublishedByChampionId(Long championId) {
+        return repo.findAllPublishedByChampionId(championId)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    // ---------- CMS SERVICES ----------
+
     @Override
     public ChampItemRecommendResponse create(ChampItemRecommendRequest request) {
 
@@ -33,11 +47,17 @@ public class ChampItemRecommendServiceImpl implements ChampItemRecommendService 
                 request.getChampionId(),
                 request.getItemId()
         )) {
-            throw new ConflictException("Champ item recommend already exists");
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
+            );
         }
 
-        Item item = itemRepo.findByIdAndDeletedFalse(request.getItemId())
-                .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+        Item item = itemRepo.findById(request.getItemId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
+                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                        String.valueOf(request.getItemId())
+                ));
 
         ChampItemRecommend entity = mapper.toEntity(request);
         entity.setItem(item);
@@ -47,23 +67,32 @@ public class ChampItemRecommendServiceImpl implements ChampItemRecommendService 
         return mapper.toResponse(saved);
     }
 
-    // ================= UPDATE =================
     @Override
     public ChampItemRecommendResponse update(Long id, ChampItemRecommendRequest request) {
 
         ChampItemRecommend entity = repo.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Champ item recommend not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
+                        )
+                );
 
         if (repo.existsByChampionIdAndItemIdAndIdNotAndDeletedFalse(
                 request.getChampionId(),
                 request.getItemId(),
                 id
         )) {
-            throw new ConflictException("Champ item recommend already exists");
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
+            );
         }
 
         Item item = itemRepo.findByIdAndDeletedFalse(request.getItemId())
-                .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
+                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                        String.valueOf(request.getItemId())
+                ));
 
         mapper.updateEntity(request, entity);
         entity.setItem(item);
@@ -75,15 +104,20 @@ public class ChampItemRecommendServiceImpl implements ChampItemRecommendService 
     @Override
     public void delete(Long id) {
         ChampItemRecommend entity = repo.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Champ item recommend not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
+                ));
 
         entity.setDeleted(true);
         repo.save(entity);
     }
+
     @Override
     public ChampItemRecommendResponse getById(Long id) {
         ChampItemRecommend entity = repo.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Champ item recommend not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
+                ));
 
         return mapper.toResponse(entity);
     }
@@ -97,8 +131,8 @@ public class ChampItemRecommendServiceImpl implements ChampItemRecommendService 
     }
 
     @Override
-    public List<ChampItemRecommendResponse> getByChampionId(Long championId) {
-        return repo.findAllByChampionId(championId)
+    public List<ChampItemRecommendResponse> getAllByChampionId(Long championId) {
+        return repo.findAllByChampionIdForCms(championId)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();

@@ -28,6 +28,7 @@ public final class Constants {
 
         // entity name
         public static final String ENTITY_CHAMP = "entity.champ";
+        public static final String ENTITY_CHAMP_ITEM_RECOMMEND = "entity.champ_item_recommend";
         public static final String ENTITY_TRAIT = "entity.trait";
         public static final String ENTITY_USER = "entity.user";
         public static final String ENTITY_TEAMS = "entity.teams";

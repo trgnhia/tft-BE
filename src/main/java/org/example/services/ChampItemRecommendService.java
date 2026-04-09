@@ -16,5 +16,6 @@ public interface ChampItemRecommendService {
 
     List<ChampItemRecommendResponse> getAll();
 
-    List<ChampItemRecommendResponse> getByChampionId(Long championId);
+    List<ChampItemRecommendResponse> getPublishedByChampionId(Long championId);
+    List<ChampItemRecommendResponse> getAllByChampionId(Long championId);
 }
