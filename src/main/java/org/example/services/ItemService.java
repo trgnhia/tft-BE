@@ -1,15 +1,19 @@
 package org.example.services;
 
+import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 
 import java.util.List;
 
-
 public interface ItemService {
     ItemResponse create (ItemRequest request);
     ItemResponse getItemById (Long id);
+    List<ItemResponse> getAllPublishedItem();
+    ItemResponse getActiveItemById(Long id);
     List<ItemResponse> getAllItem ();
     ItemResponse update (Long id, ItemRequest request);
     void delete (Long id);
+    PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId);
+    PageResponse<ItemResponse> getPublishedItems(int page, int size, String keyword, Long setId);
 }

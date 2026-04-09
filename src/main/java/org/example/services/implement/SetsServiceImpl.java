@@ -4,14 +4,18 @@ import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
+import org.example.core.api.PageResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.entities.Sets;
-
 import org.example.mapper.SetsMapper;
 import org.example.repositories.SetsRepository;
 import org.example.services.SetsService;
 import org.example.util.MessageUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -24,6 +28,15 @@ public class SetsServiceImpl implements SetsService {
     private final SetsRepository setRepo;
     private final SetsMapper setsMapper;
 
+    // ---------- PUBLIC SERVICES ----------
+    @Override
+    public List<SetsResponse> getAllPublishedSet() {
+        List<Sets> sets = setRepo.findAllByDeletedFalse();
+        return setsMapper.toListSetsResponse(sets);
+    }
+
+    // ---------- CMS SERVICES ----------
+
     @Override
     public SetsResponse getSetById(Long id) {
         Sets sets = getById(id);
@@ -31,9 +44,11 @@ public class SetsServiceImpl implements SetsService {
     }
 
     @Override
-    public List<SetsResponse> getAllSet() {
-        List<Sets> sets = setRepo.findAll();
-        return setsMapper.toListSetsResponse(sets);
+    public PageResponse<SetsResponse> getAllSet(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Sets> setsPage = setRepo.findAllByDeletedFalse(pageable);
+        Page<SetsResponse> responsePage = setsPage.map(setsMapper::toSetsResponse);
+        return PageResponse.from(responsePage);
     }
 
     @Override
@@ -45,7 +60,6 @@ public class SetsServiceImpl implements SetsService {
 
         Sets sets = setsMapper.toEntity(request);
         sets.setName(normalizedName);
-        sets.setActive(request.getIsActive() == null || request.getIsActive());
         Sets savedSets = setRepo.save(sets);
         return setsMapper.toSetsResponse(savedSets);
     }
@@ -59,10 +73,6 @@ public class SetsServiceImpl implements SetsService {
         validateDuplicateNameForUpdate(normalizedName, id);
 
         existingSet.setName(normalizedName);
-        if (request.getIsActive() != null) {
-            existingSet.setActive(request.getIsActive());
-        }
-
         Sets updatedSet = setRepo.save(existingSet);
         return setsMapper.toSetsResponse(updatedSet);
     }

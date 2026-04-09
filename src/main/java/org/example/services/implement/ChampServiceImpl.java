@@ -12,6 +12,7 @@ import org.example.dto.champs.*;
 import org.example.entities.Sets;
 import org.example.entities.champ.Champ;
 import org.example.mapper.ChampsMapper;
+import org.example.repositories.ChampItemRecommendRepository;
 import org.example.repositories.ChampRepository;
 import org.example.repositories.spec.ChampSpecification;
 import org.example.repositories.SetsRepository;
@@ -36,6 +37,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     private final ChampRepository champRepository;
     private final SetsRepository setsRepository;
     private final ChampsMapper champMapper;
+    private final ChampItemRecommendRepository champItemRecommendRepo;
     private final FilterUtil filterUtil;
 
     @Override
@@ -90,7 +92,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         return champRepository.findBySetsId(setId)
                 .stream()
                 .map(champMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -151,7 +153,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
                 ));
-
+        champItemRecommendRepo.softDeleteByChampionId(id);
         champRepository.delete(champ);
         log.info("[CHAMP] Deleted successfully id={} by user={}", id, getCurrentUserNameOrThrow());
     }
@@ -162,7 +164,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP] bulkCreate count={}", request.getChamps().size());
         return request.getChamps().stream()
                 .map(this::create)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -266,17 +268,12 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                 .stream().collect(Collectors.toMap(
                         r -> (Integer) r[0], r -> (Long) r[1]));
 
-        Map<String, Long> byTier = champRepository.countGroupByTier()
-                .stream().collect(Collectors.toMap(
-                        r -> (String) r[0], r -> (Long) r[1]));
-
         return ChampOverviewStatsResponse.builder()
                 .totalChamps(total)
                 .totalDeleted(deleted)
                 .totalActive(active)
                 .countBySet(bySet)
                 .countByCost(byCost)
-                .countByTier(byTier)
                 .build();
     }
 

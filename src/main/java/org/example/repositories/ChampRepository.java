@@ -29,8 +29,7 @@ public interface ChampRepository extends JpaRepository<Champ, Long>, JpaSpecific
     @Query("SELECT c.cost, COUNT(c) FROM Champ c WHERE c.deleted = false GROUP BY c.cost")
     List<Object[]> countGroupByCost();
 
-    @Query("SELECT c.tier, COUNT(c) FROM Champ c WHERE c.deleted = false GROUP BY c.tier")
-    List<Object[]> countGroupByTier();
+
 
     List<Champ> findBySetsId(Long setId);
 }

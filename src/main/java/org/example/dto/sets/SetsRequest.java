@@ -12,7 +12,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SetsRequest {
-    private Boolean isActive;
     @NotBlank(message = "{sets.name.not_blank}")
     @Size(max = 100, message = "{sets.name.size}")
     private String name;
