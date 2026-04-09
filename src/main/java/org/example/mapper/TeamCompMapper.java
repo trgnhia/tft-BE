@@ -4,14 +4,18 @@ import org.example.dto.teamcomp.TeamCompRequest;
 import org.example.dto.teamcomp.TeamCompResponse;
 import org.example.entities.TeamComp;
 import org.example.entities.TeamCompChamp;
+import org.example.entities.Sets;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface TeamCompMapper {
 
-    // 1. MAPPING ENTITY -> RESPONSE
+    // MAPPING ENTITY -> RESPONSE
     @Mapping(target = "champions", source = "teamCompChamps")
+    @Mapping(target = "set", source = "sets")
     TeamCompResponse toResponse(TeamComp entity);
+
+    TeamCompResponse.SetSimpleDto toSetSimpleDto(Sets sets);
 
     @Mapping(target = "id", source = "champ.id")
     @Mapping(target = "name", source = "champ.name")
@@ -19,20 +23,28 @@ public interface TeamCompMapper {
     @Mapping(target = "cost", source = "champ.cost")
     TeamCompResponse.ChampionSimpleDto toChampionSimpleDto(TeamCompChamp tcc);
 
-    // 2. MAPPING REQUEST -> ENTITY
+    // MAPPING REQUEST -> ENTITY
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "teamCompChamps", ignore = true)
-    @Mapping(target = "setId", constant = "17L") // Tạm hardcode Set 17
+    @Mapping(target = "sets", ignore = true)
     @Mapping(target = "slug", expression = "java(generateSlug(request.getName()))")
     TeamComp toEntity(TeamCompRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "teamCompChamps", ignore = true)
-    @Mapping(target = "setId", ignore = true)
-    @Mapping(target = "slug", expression = "java(generateSlug(request.getName()))")
+    @Mapping(target = "sets", ignore = true)
+    @Mapping(target = "slug", ignore = true)
     void updateEntity(TeamCompRequest request, @MappingTarget TeamComp entity);
 
-    // 3. CÁC HÀM XỬ LÝ CUSTOM
+    @AfterMapping
+    default void fillSets(TeamCompRequest request, @MappingTarget TeamComp entity) {
+        if (request.getSetId() != null) {
+            Sets sets = new Sets();
+            sets.setId(request.getSetId());
+            entity.setSets(sets);
+        }
+    }
+
     default String generateSlug(String name) {
         if (name == null || name.isBlank()) return null;
         return name.toLowerCase().replaceAll("\\s+", "-");

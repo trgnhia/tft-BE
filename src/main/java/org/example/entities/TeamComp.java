@@ -13,8 +13,9 @@ import java.util.List;
 @Setter
 public class TeamComp extends AuditableEntity {
 
-    @Column(name = "set_id")
-    private Long setId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "set_id")
+    private Sets sets;
 
     @Column(name = "slug", unique = true)
     private String slug;

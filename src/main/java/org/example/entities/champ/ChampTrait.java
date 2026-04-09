@@ -1,8 +1,9 @@
-package org.example.entities;
+package org.example.entities.champ;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.common.entity.BaseEntity;
+import org.example.entities.Trait;
 
 @Entity
 @Table(

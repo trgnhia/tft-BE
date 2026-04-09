@@ -3,11 +3,17 @@ package org.example.core.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import org.example.common.constant.Constants;
-@Builder
+import org.springframework.http.HttpStatus;
+
+import static org.example.common.constant.Constants.Api.FAIL_CODE;
+import static org.example.common.constant.Constants.Api.SUCCESS_CODE;
+
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class ApiResponse<T> {
     private boolean success;
     private Object message;
@@ -21,6 +27,15 @@ public class ApiResponse<T> {
                 .success(true)
                 .message(Constants.Api.SUCCESS_MESSAGE)
                 .data(data)
+                .code(SUCCESS_CODE)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(Object message) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .code(FAIL_CODE)
                 .build();
     }
 
@@ -40,6 +55,8 @@ public class ApiResponse<T> {
                 .detail(detail)
                 .build();
     }
+
+
 
 
 }

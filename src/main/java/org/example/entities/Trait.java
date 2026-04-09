@@ -5,6 +5,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import lombok.*;
 import org.example.common.entity.AuditableEntity;
+import org.example.entities.champ.ChampTrait;
 import org.hibernate.annotations.*;
 
 

@@ -11,4 +11,7 @@ public class ConflictException extends DataException{
     public ConflictException(String... params) {
         super(ErrorCode.ALREADY_EXISTS, params);
     }
+    public ConflictException(ErrorCode errorCode, String... params) {
+        super(errorCode, params);
+    }
 }

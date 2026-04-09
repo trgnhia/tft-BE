@@ -23,6 +23,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 // LƯU Ý: Sửa lại import AccessDeniedException của Spring Security
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -103,8 +105,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         request.setAttribute("errorMessage", msg);
 
+                (Object[]) ex.getArgs()
+        );
+
         return new ResponseEntity<>(
-                ApiResponse.error(msg, ex.getErrorCode().name(), ex.getMessage()), ex.getStatus()
+                ApiResponse.error(msg, ex.getErrorCode().getCode(), ex.getMessage()),
+                ex.getStatus()
         );
     }
 
@@ -113,7 +119,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("AccessDeniedException Error ", ex);
         ErrorCode forbiddenCode = ErrorCode.PERMISSION_DENIED;
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + forbiddenCode.getCode(),
+                ERROR_LOG_PREFIX + forbiddenCode.name(),
                 null,
                 "");
 
@@ -121,6 +127,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return new ResponseEntity<>(
                 ApiResponse.error(msg, forbiddenCode.name()), HttpStatus.FORBIDDEN
+        );
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
+        log.error("Authentication Error ", ex);
+        ErrorCode unauthorize = ErrorCode.UNAUTHORIZED;
+        String msg = MessageUtils.getMessage(ERROR_LOG_PREFIX + unauthorize.name(), null, "");
+        return new ResponseEntity<>(
+                ApiResponse.error(msg, unauthorize.name()), HttpStatus.UNAUTHORIZED
         );
     }
 
@@ -148,7 +164,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnwantedException(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> handleUnwantedException(Exception ex) {
         log.error("Error ", ex);
         ErrorCode unexpectedCode = ErrorCode.UNEXPECTED_ERROR;
         String msg = MessageUtils.getMessage(
@@ -169,11 +185,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
 
         String msg = MessageUtils.getMessage(
-                Constants.MessageKey.ERROR_NOT_FOUND,
-                ex.getMessage()
+                ERROR_LOG_PREFIX + ex.getErrorCode(),
+                (Object[]) ex.getArgs()
         );
         request.setAttribute("errorMessage", msg);
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.name()));
+                .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
     }
 }
