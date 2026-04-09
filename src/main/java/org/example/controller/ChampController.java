@@ -5,15 +5,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
-import org.example.dto.champs.ChampResponse;
-import org.example.dto.champs.CreateChampRequest;
-import org.example.dto.champs.UpdateChampRequest;
+import org.example.dto.champs.*;
 import org.example.services.ChampService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @RestController
@@ -44,6 +44,12 @@ public class ChampController {
         return ApiResponse.success(champService.getBySlug(slug));
     }
 
+    @GetMapping("/champs/set/{setId}")
+    public ApiResponse<List<ChampResponse>> getBySetId(@PathVariable Long setId) {
+        log.info("REST get champs by setId={}", setId);
+        return ApiResponse.success(champService.getBySetId(setId));
+    }
+
     //editor them, sua, xoa
     @PostMapping("/editor/champs")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
@@ -52,6 +58,15 @@ public class ChampController {
         log.info("REST request to create Champ: {}", request.getSlug());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(champService.create(request)));
+    }
+
+    @PostMapping("/editor/champs/bulk")
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<ChampResponse>>> bulkCreate(
+            @RequestBody @Valid BulkCreateRequest request) {
+        log.info("REST bulkCreate champs count={}", request.getChamps().size());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(champService.bulkCreate(request)));
     }
 
     @PutMapping("/editor/champs/{id}")
@@ -68,6 +83,14 @@ public class ChampController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         log.info("REST request to delete Champ id: {}", id);
         champService.delete(id);
+        return ApiResponse.success(null);
+    }
+
+    @DeleteMapping("/editor/champs/bulk")
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ApiResponse<Void> bulkDelete(@RequestBody @Valid BulkDeleteRequest request) {
+        log.info("REST bulkDelete champs ids={}", request.getIds());
+        champService.bulkDelete(request);
         return ApiResponse.success(null);
     }
 
@@ -88,11 +111,35 @@ public class ChampController {
         return ApiResponse.success(champService.getByIdAdmin(id));
     }
 
+    @GetMapping("/admin/champs/search")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<PageResponse<ChampResponse>> searchAdmin(
+            @ModelAttribute ChampFilterRequest filter,
+            Pageable pageable) {
+        log.info("REST ADMIN search champs filter={}", filter);
+        return ApiResponse.success(champService.searchAdmin(filter, pageable));
+    }
+
+    @GetMapping("/admin/champs/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<ChampOverviewStatsResponse> getStats() {
+        log.info("REST ADMIN get champ stats");
+        return ApiResponse.success(champService.getStats());
+    }
+
     @PatchMapping("/admin/champs/{id}/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> restore(@PathVariable Long id) {
         log.info("REST request to restore Champ id: {}", id);
         champService.restore(id);
+        return ApiResponse.success(null);
+    }
+
+    @PatchMapping("/admin/champs/bulk/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> bulkRestore(@RequestBody @Valid BulkDeleteRequest request) {
+        log.info("REST ADMIN bulkRestore champs ids={}", request.getIds());
+        champService.bulkRestore(request);
         return ApiResponse.success(null);
     }
 }

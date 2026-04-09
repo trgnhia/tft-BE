@@ -6,15 +6,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
-import org.example.dto.trait.CreateTraitRequest;
-import org.example.dto.trait.TraitResponse;
-import org.example.dto.trait.UpdateTraitRequest;
+import org.example.dto.champs.BulkDeleteRequest;
+import org.example.dto.trait.*;
 import org.example.services.implement.TraitServiceImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping
@@ -96,5 +97,34 @@ public class TraitController {
         log.info("[PATCH] /admin/traits/{}/restore", id);
         traitService.restore(id);
         return ApiResponse.success(null);
+    }
+
+    @GetMapping("/traits/search")
+    public ApiResponse<PageResponse<TraitResponse>> search(
+            @ModelAttribute TraitFilterRequest filter, // @ModelAttribute dùng để map Query Params vào Object
+            Pageable pageable) {
+        log.info("[GET] /traits/search filter={}", filter);
+        return ApiResponse.success(traitService.search(filter, pageable));
+    }
+
+    @GetMapping("/admin/traits/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<TraitOverviewStatsResponse> getStats() {
+        log.info("[GET] /admin/traits/stats");
+        return ApiResponse.success(traitService.getStats());
+    }
+
+    @PatchMapping("/admin/traits/bulk-restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> bulkRestore(@RequestBody BulkDeleteRequest request) {
+        log.info("[PATCH] /admin/traits/bulk-restore count={}", request.getIds().size());
+        traitService.bulkRestore(request);
+        return ApiResponse.success(null);
+    }
+
+    @GetMapping("/traits/dropdown")
+    public ApiResponse<List<TraitResponse>> getForDropdown() {
+        log.info("[GET] /traits/dropdown");
+        return ApiResponse.success(traitService.getForDropdown());
     }
 }

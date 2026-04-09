@@ -10,7 +10,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring")
+import java.util.List;
+
+@Mapper(componentModel = "spring", builder = @org.mapstruct.Builder(disableBuilder = true))
 public interface TraitMapper {
 
     @Mapping(target = "id", ignore = true)
@@ -34,6 +36,8 @@ public interface TraitMapper {
     @Mapping(target = "champTraits", ignore = true)
     void updateEntity(UpdateTraitRequest request, @MappingTarget Trait trait);
 
+    @Mapping(target = "setId", source = "sets.id")
     TraitResponse toResponse(Trait trait);
-    TraitBreakpoint toBreakpointEntity(TraitBreakPointRequest request);
+
+    List<TraitBreakpoint> toBreakpointEntityList(List<TraitBreakPointRequest> list);
 }
