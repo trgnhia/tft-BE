@@ -3,6 +3,7 @@ package org.example.controller.item;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
+import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 import org.example.services.ItemService;
@@ -24,10 +25,21 @@ public class ItemController {
         return ResponseEntity.ok(ApiResponse.success(res));
     }
 
-    @GetMapping
+    @GetMapping("/published")
     public ResponseEntity<ApiResponse<List<ItemResponse>>> getAll() {
         List<ItemResponse> res = itemService.getAllPublishedItem();
         return ResponseEntity.ok(ApiResponse.success(res));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getPublishedItems(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long setId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(itemService.getPublishedItems(page, size, keyword, setId))
+        );
+    }
 }

@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -32,108 +31,90 @@ public class ChampItemRecommendServiceImpl implements ChampItemRecommendService 
 
     @Override
     public List<ChampItemRecommendResponse> getPublishedByChampionId(Long championId) {
-        return repo.findAllPublishedByChampionId(championId)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        return toResponseList(repo.findAllPublishedByChampionId(championId));
     }
 
     // ---------- CMS SERVICES ----------
 
     @Override
     public ChampItemRecommendResponse create(ChampItemRecommendRequest request) {
+        validateDuplicate(request.getChampionId(), request.getItemId(), null);
 
-        if (repo.existsByChampionIdAndItemIdAndDeletedFalse(
-                request.getChampionId(),
-                request.getItemId()
-        )) {
-            throw new ConflictException(
-                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
-            );
-        }
-
-        Item item = itemRepo.findById(request.getItemId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
-                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
-                        String.valueOf(request.getItemId())
-                ));
+        Item item = getPublishedItemById(request.getItemId());
 
         ChampItemRecommend entity = mapper.toEntity(request);
         entity.setItem(item);
         entity.setDeleted(false);
 
-        ChampItemRecommend saved = repo.save(entity);
-        return mapper.toResponse(saved);
+        return mapper.toResponse(repo.save(entity));
     }
 
     @Override
     public ChampItemRecommendResponse update(Long id, ChampItemRecommendRequest request) {
+        ChampItemRecommend entity = getActiveRecommendById(id);
+        validateDuplicate(request.getChampionId(), request.getItemId(), id);
 
-        ChampItemRecommend entity = repo.findByIdAndDeletedFalse(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
-                        )
-                );
-
-        if (repo.existsByChampionIdAndItemIdAndIdNotAndDeletedFalse(
-                request.getChampionId(),
-                request.getItemId(),
-                id
-        )) {
-            throw new ConflictException(
-                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
-            );
-        }
-
-        Item item = itemRepo.findByIdAndDeletedFalse(request.getItemId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
-                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
-                        String.valueOf(request.getItemId())
-                ));
+        Item item = getPublishedItemById(request.getItemId());
 
         mapper.updateEntity(request, entity);
         entity.setItem(item);
 
-        ChampItemRecommend saved = repo.save(entity);
-        return mapper.toResponse(saved);
+        return mapper.toResponse(repo.save(entity));
     }
 
     @Override
     public void delete(Long id) {
-        ChampItemRecommend entity = repo.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
-                ));
-
+        ChampItemRecommend entity = getActiveRecommendById(id);
         entity.setDeleted(true);
         repo.save(entity);
     }
 
     @Override
     public ChampItemRecommendResponse getById(Long id) {
-        ChampItemRecommend entity = repo.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
-                ));
-
-        return mapper.toResponse(entity);
+        return mapper.toResponse(getActiveRecommendById(id));
     }
 
     @Override
     public List<ChampItemRecommendResponse> getAll() {
-        return repo.findAllActive()
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        return toResponseList(repo.findAllActive());
     }
 
     @Override
     public List<ChampItemRecommendResponse> getAllByChampionId(Long championId) {
-        return repo.findAllByChampionIdForCms(championId)
-                .stream()
+        return toResponseList(repo.findAllByChampionIdForCms(championId));
+    }
+
+
+    private ChampItemRecommend getActiveRecommendById(Long id) {
+        return repo.findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
+                ));
+    }
+
+    private Item getPublishedItemById(Long itemId) {
+        return itemRepo.findPublishedById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
+                        MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
+                        String.valueOf(itemId)
+                ));
+    }
+
+    private void validateDuplicate(Long championId, Long itemId, Long excludeId) {
+        boolean exists = (excludeId == null)
+                ? repo.existsByChampionIdAndItemIdAndDeletedFalse(championId, itemId)
+                : repo.existsByChampionIdAndItemIdAndIdNotAndDeletedFalse(championId, itemId, excludeId);
+
+        if (exists) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_CHAMP_ITEM_RECOMMEND)
+            );
+        }
+    }
+
+    private List<ChampItemRecommendResponse> toResponseList(List<ChampItemRecommend> entities) {
+        return entities.stream()
                 .map(mapper::toResponse)
                 .toList();
     }

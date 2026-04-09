@@ -8,11 +8,7 @@ import org.example.core.api.PageResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.entities.Sets;
-
-import org.example.mapper.ChampItemRecommendMapper;
 import org.example.mapper.SetsMapper;
-import org.example.repositories.ChampItemRecommendRepository;
-import org.example.repositories.ItemRepository;
 import org.example.repositories.SetsRepository;
 import org.example.services.SetsService;
 import org.example.util.MessageUtils;
@@ -30,9 +26,9 @@ import java.util.List;
 public class SetsServiceImpl implements SetsService {
 
     private final SetsRepository setRepo;
-    private final ItemRepository itemRepo;
     private final SetsMapper setsMapper;
-    private final ChampItemRecommendRepository champItemRecommendRepo;
+
+    // ---------- PUBLIC SERVICES ----------
     @Override
     public List<SetsResponse> getAllPublishedSet() {
         List<Sets> sets = setRepo.findAllByDeletedFalse();
@@ -94,8 +90,6 @@ public class SetsServiceImpl implements SetsService {
             );
         }
         sets.setDeleted(true);
-        itemRepo.softDeleteBySetId(id);
-        champItemRecommendRepo.softDeleteBySetId(id);
         setRepo.save(sets);
     }
 

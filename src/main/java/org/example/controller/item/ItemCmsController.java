@@ -36,7 +36,7 @@ public class ItemCmsController {
             @RequestParam(required = false) Long setId
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(itemService.getItems(page, size, keyword, setId))
+                ApiResponse.success(itemService.getItemsForCms(page, size, keyword, setId))
         );
     }
 

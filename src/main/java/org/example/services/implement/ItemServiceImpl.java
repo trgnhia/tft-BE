@@ -36,22 +36,42 @@ public class ItemServiceImpl implements ItemService {
     private final SetsRepository setRepo;
     private final ChampItemRecommendRepository champItemRecommendRepo;
 
+    // ---------- PUBLIC SERVICES ----------
+
     @Override
     public List<ItemResponse> getAllPublishedItem() {
-        return itemRepo.findAllActiveWithSets().stream()
+        return itemRepo.findAllPublishedWithSets().stream()
                 .map(itemMapper::toItemResponse)
                 .toList();
     }
 
     @Override
     public ItemResponse getActiveItemById(Long id) {
-        Item item = itemRepo.findByIdAndDeletedFalse(id)
+        Item item = itemRepo.findPublishedById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
                         MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
                         String.valueOf(id)
                 ));
         return itemMapper.toItemResponse(item);
+    }
+
+    @Override
+    public PageResponse<ItemResponse> getPublishedItems(int page, int size, String keyword, Long setId) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        String normalizedKeyword = (keyword == null || keyword.trim().isEmpty())
+                ? null
+                : keyword.trim();
+
+        Page<Item> itemPage = itemRepo.searchItemsForPublic(normalizedKeyword, setId, pageable);
+        Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
+
+        return PageResponse.from(responsePage);
     }
 
     // ---------- CMS SERVICES ----------
@@ -71,7 +91,7 @@ public class ItemServiceImpl implements ItemService {
 
 
     @Override
-    public PageResponse<ItemResponse> getItems(int page, int size, String keyword, Long setId) {
+    public PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId) {
         Pageable pageable = PageRequest.of(
                 page,
                 size,
@@ -81,10 +101,11 @@ public class ItemServiceImpl implements ItemService {
                 ? null
                 : keyword.trim();
 
-        Page<Item> itemPage = itemRepo.searchItems(normalizedKeyword, setId, pageable);
+        Page<Item> itemPage = itemRepo.searchItemsForCms(normalizedKeyword, setId, pageable);
         Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
         return PageResponse.from(responsePage);
     }
+
 
 
     @Override

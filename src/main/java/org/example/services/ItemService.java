@@ -14,5 +14,6 @@ public interface ItemService {
     List<ItemResponse> getAllItem ();
     ItemResponse update (Long id, ItemRequest request);
     void delete (Long id);
-    PageResponse<ItemResponse> getItems(int page, int size, String keyword, Long setId);
+    PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId);
+    PageResponse<ItemResponse> getPublishedItems(int page, int size, String keyword, Long setId);
 }
