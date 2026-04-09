@@ -21,8 +21,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-// LƯU Ý: Sửa lại import AccessDeniedException của Spring Security
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -44,7 +42,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ServerException.class)
     @ResponseBody
-    public ResponseEntity<ApiResponse<Void>> handleServerException(ServerException ex, HttpServletRequest request) { // Thêm request
+    public ResponseEntity<ApiResponse<Void>> handleServerException(ServerException ex, HttpServletRequest request) {
         log.error("ServerException occurred: {}", ex.getMessage(), ex);
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
@@ -64,24 +62,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleMethodArgumentNotValid(@NonNull MethodArgumentNotValidException ex,
                                                                   @NonNull HttpHeaders httpHeaders,
                                                                   @NonNull HttpStatusCode status,
-                                                                  @NonNull WebRequest request) { // Dùng WebRequest
+                                                                  @NonNull WebRequest request) {
         List<ParamError> errors = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> new ParamError(error.getField(), error.getDefaultMessage()))
                 .toList();
 
-        // Gộp tất cả các lỗi nhập liệu thành 1 chuỗi để lưu Log DB
         String msg = errors.stream()
                 .map(e -> e.getField() + ": " + e.getMessage())
                 .collect(Collectors.joining("; "));
 
-        request.setAttribute("errorMessage", msg, WebRequest.SCOPE_REQUEST); // Nhét lỗi vào WebRequest
+        request.setAttribute("errorMessage", msg, WebRequest.SCOPE_REQUEST);
 
         return ResponseEntity.badRequest().body(
                 ApiResponse.error(errors,ErrorCode.INVALID_PARAMETER.getCode()));
     }
 
     @ExceptionHandler(DataException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDataException(DataException ex, HttpServletRequest request) { // Thêm request
+    public ResponseEntity<ApiResponse<Void>> handleDataException(DataException ex, HttpServletRequest request) {
         log.error("DataException Error ", ex);
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
@@ -96,7 +93,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConflictException(ConflictException ex, HttpServletRequest request) { // Thêm request
+    public ResponseEntity<ApiResponse<Void>> handleConflictException(ConflictException ex, HttpServletRequest request) {
         log.error("ConflictException Error ", ex);
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
@@ -105,9 +102,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         request.setAttribute("errorMessage", msg);
 
-                (Object[]) ex.getArgs()
-        );
-
         return new ResponseEntity<>(
                 ApiResponse.error(msg, ex.getErrorCode().getCode(), ex.getMessage()),
                 ex.getStatus()
@@ -115,7 +109,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex, HttpServletRequest request) { // Thêm request
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex, HttpServletRequest request) {
         log.error("AccessDeniedException Error ", ex);
         ErrorCode forbiddenCode = ErrorCode.PERMISSION_DENIED;
         String msg = MessageUtils.getMessage(
@@ -131,10 +125,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
         log.error("Authentication Error ", ex);
         ErrorCode unauthorize = ErrorCode.UNAUTHORIZED;
         String msg = MessageUtils.getMessage(ERROR_LOG_PREFIX + unauthorize.name(), null, "");
+
+        request.setAttribute("errorMessage", msg);
+
         return new ResponseEntity<>(
                 ApiResponse.error(msg, unauthorize.name()), HttpStatus.UNAUTHORIZED
         );
@@ -152,7 +149,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         (existing, replacement) -> existing
                 ));
 
-        // Sửa lỗi ở đây: Tạo biến msg bằng cách gộp các lỗi lại
         String msg = errors.entrySet().stream()
                 .map(entry -> entry.getKey() + ": " + entry.getValue())
                 .collect(Collectors.joining("; "));
@@ -164,14 +160,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnwantedException(Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> handleUnwantedException(Exception ex, HttpServletRequest request) {
         log.error("Error ", ex);
         ErrorCode unexpectedCode = ErrorCode.UNEXPECTED_ERROR;
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + unexpectedCode.getCode(),
                 null,
                 "");
-
 
         request.setAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : msg);
 
@@ -189,6 +184,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 (Object[]) ex.getArgs()
         );
         request.setAttribute("errorMessage", msg);
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
     }
