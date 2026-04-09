@@ -5,6 +5,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import lombok.*;
 import org.example.common.entity.AuditableEntity;
+import org.example.entities.Sets;
 import org.example.entities.champ.ChampTrait;
 import org.hibernate.annotations.*;
 import org.hibernate.type.SqlTypes;
@@ -25,9 +26,6 @@ public class Trait extends AuditableEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "set_id", nullable = false)
-    private Long setId;
-
     @Column(name = "slug", nullable = false, unique = true, length = 100)
     private String slug;
 
@@ -45,8 +43,8 @@ public class Trait extends AuditableEntity {
     private List<TraitBreakpoint> breakpoints;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "set_id", insertable = false, updatable = false)
-    private org.example.entities.Sets sets;
+    @JoinColumn(name = "set_id", nullable = false)
+    private Sets sets;
 
     @OneToMany(mappedBy = "trait", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<ChampTrait> champTraits = new ArrayList<>();
