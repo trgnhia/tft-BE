@@ -10,16 +10,14 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class ChampItemRecommendRequest {
-
-    @NotNull(message = "championId must not be null")
-    @Min(value = 1, message = "championId must be greater than 0")
+    @NotNull(message = "{champ_item_recommend.champion_id.not_null}")
+    @Min(value = 1, message = "{champ_item_recommend.champion_id.min}")
     private Long championId;
 
-    @NotNull(message = "itemId must not be null")
-    @Min(value = 1, message = "itemId must be greater than 0")
+    @NotNull(message = "{champ_item_recommend.item_id.not_null}")
+    @Min(value = 1, message = "{champ_item_recommend.item_id.min}")
     private Long itemId;
 
-    @Min(value = 1, message = "priority must be greater than 0")
+    @Min(value = 1, message = "{champ_item_recommend.priority.min}")
     private Integer priority;
-
 }
