@@ -82,20 +82,42 @@ public class CmsLogInterceptor implements HandlerInterceptor {
                             String responseStr = new String(responseArray, responseWrapper.getCharacterEncoding());
                             JsonNode jsonNode = objectMapper.readTree(responseStr);
 
-                            if (jsonNode.has("message")) {
-                                errorMessage = jsonNode.get("message").asText();
+                            if (jsonNode.has("message") && !jsonNode.get("message").isNull()) {
+                                JsonNode messageNode = jsonNode.get("message");
+
+                                //Case Validation Lỗi nhiều field
+                                if (messageNode.isArray()) {
+                                    StringBuilder errorBuilder = new StringBuilder();
+                                    for (JsonNode node : messageNode) {
+                                        if (node.has("field") && node.has("message")) {
+                                            errorBuilder.append(node.get("field").asText())
+                                                    .append(": ")
+                                                    .append(node.get("message").asText())
+                                                    .append("; ");
+                                        } else if (node.has("message")) {
+                                            errorBuilder.append(node.get("message").asText()).append("; ");
+                                        }
+                                    }
+                                    errorMessage = errorBuilder.toString();
+                                }
+                                else {
+                                    errorMessage = messageNode.asText();
+                                }
+                            }
+                            //  Fallback cho các lỗi mặc định của Spring Boot (sai cú pháp JSON...)
+                            else if (jsonNode.has("detail") && !jsonNode.get("detail").isNull()) {
+                                errorMessage = jsonNode.get("detail").asText();
+                            } else if (jsonNode.has("error") && !jsonNode.get("error").isNull()) {
+                                errorMessage = jsonNode.get("error").asText();
+                            } else {
+                                // nếu không có các trường trên thì in thẳng cái json lỗi ra
+                                errorMessage = responseStr.length() > 200 ? responseStr.substring(0, 200) + "..." : responseStr;
                             }
                         } catch (Exception e) {
                             log.warn("Không thể parse JSON từ response body để lấy lỗi", e);
                         }
                     }
                 }
-
-//                // Backup: Nếu parse fail (hoặc không phải JSON), vẫn móc lỗi từ request attribute như cũ
-//                if (errorMessage == null) {
-//                    Object customError = request.getAttribute("errorMessage");
-//                    if (customError != null) errorMessage = customError.toString();
-//                }
             }
 
             if (errorMessage != null && errorMessage.length() > 500) {
@@ -115,7 +137,6 @@ public class CmsLogInterceptor implements HandlerInterceptor {
             realLog.setDurationMs(durationMs);
             realLog.setErrorMessage(errorMessage);
 
-            // Đẩy vào Queue
             internalLogQueue.push(realLog);
 
         } catch (Exception e) {
