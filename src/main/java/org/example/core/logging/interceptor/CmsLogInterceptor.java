@@ -1,5 +1,7 @@
 package org.example.core.logging.interceptor;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -21,6 +24,7 @@ import java.time.Instant;
 public class CmsLogInterceptor implements HandlerInterceptor {
 
     private final InternalLogQueue internalLogQueue;
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -34,7 +38,6 @@ public class CmsLogInterceptor implements HandlerInterceptor {
         log.info("INTERCEPTOR Đang xử lý log sau khi API chạy xong...");
         String method = request.getMethod();
 
-        // Chỉ log các thao tác thay đổi dữ liệu
         if ("GET".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method)) {
             return;
         }
@@ -44,7 +47,6 @@ public class CmsLogInterceptor implements HandlerInterceptor {
             Instant endTime = Instant.now();
             int durationMs = (int) (endTime.toEpochMilli() - startTime.toEpochMilli());
 
-            // 1. TỰ ĐỘNG PHÂN LOẠI ACTION_NAME
             String actionName = switch (method.toUpperCase()) {
                 case "POST" -> "THÊM MỚI";
                 case "PUT", "PATCH" -> "CẬP NHẬT";
@@ -52,7 +54,6 @@ public class CmsLogInterceptor implements HandlerInterceptor {
                 default -> "THAO TÁC KHÁC";
             };
 
-            // 2. Lấy Body từ Wrapper
             String requestBody = "";
             if (request instanceof ContentCachingRequestWrapper wrapper) {
                 byte[] buf = wrapper.getContentAsByteArray();
@@ -61,54 +62,60 @@ public class CmsLogInterceptor implements HandlerInterceptor {
                 }
             }
 
-            // 3. Lấy User đang thao tác
             String username = "anonymous";
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
                 username = auth.getName();
             }
 
-            // 4. Đóng gói Log
-            CmsLog realLog = new CmsLog();
-            realLog.setUsername(username);
-            realLog.setEndpoint(request.getRequestURI());
-            realLog.setHttpMethod(method);
-
-            // Lưu nhãn Tiếng Việt vào đây
-            realLog.setActionName(actionName);
-
-            realLog.setIpAddress(request.getRemoteAddr());
-            realLog.setRequestBody(requestBody);
-            realLog.setResultStatus(response.getStatus());
-            realLog.setStartTime(startTime);
-            realLog.setEndTime(endTime);
-            realLog.setDurationMs(durationMs);
-
+            int status = response.getStatus();
             String errorMessage = null;
+
             if (ex != null) {
                 errorMessage = ex.getMessage();
-            } else {
-                // Móc lỗi từ GlobalExceptionHandler ra
-                Object customError = request.getAttribute("errorMessage");
-                if (customError != null) {
-                    errorMessage = customError.toString();
-                } else {
-                    Object defaultError = request.getAttribute("jakarta.servlet.error.message");
-                    if (defaultError != null && !defaultError.toString().isBlank()) {
-                        errorMessage = defaultError.toString();
+            } else if (status < 200 || status >= 300) {
+                // Kiểm tra xem Response có được bọc không
+                if (response instanceof ContentCachingResponseWrapper responseWrapper) {
+                    byte[] responseArray = responseWrapper.getContentAsByteArray();
+                    if (responseArray.length > 0) {
+                        try {
+                            String responseStr = new String(responseArray, responseWrapper.getCharacterEncoding());
+                            JsonNode jsonNode = objectMapper.readTree(responseStr);
+
+                            if (jsonNode.has("message")) {
+                                errorMessage = jsonNode.get("message").asText();
+                            }
+                        } catch (Exception e) {
+                            log.warn("Không thể parse JSON từ response body để lấy lỗi", e);
+                        }
                     }
                 }
+
+//                // Backup: Nếu parse fail (hoặc không phải JSON), vẫn móc lỗi từ request attribute như cũ
+//                if (errorMessage == null) {
+//                    Object customError = request.getAttribute("errorMessage");
+//                    if (customError != null) errorMessage = customError.toString();
+//                }
             }
 
-            // Cắt bớt nếu lỗi quá dài tránh tràn DB
             if (errorMessage != null && errorMessage.length() > 500) {
                 errorMessage = errorMessage.substring(0, 497) + "...";
             }
 
-            // Ghi lỗi vào DB
+            CmsLog realLog = new CmsLog();
+            realLog.setUsername(username);
+            realLog.setEndpoint(request.getRequestURI());
+            realLog.setHttpMethod(method);
+            realLog.setActionName(actionName);
+            realLog.setIpAddress(request.getRemoteAddr());
+            realLog.setRequestBody(requestBody);
+            realLog.setResultStatus(status);
+            realLog.setStartTime(startTime);
+            realLog.setEndTime(endTime);
+            realLog.setDurationMs(durationMs);
             realLog.setErrorMessage(errorMessage);
 
-            // 5. Đẩy vào Queue
+            // Đẩy vào Queue
             internalLogQueue.push(realLog);
 
         } catch (Exception e) {
