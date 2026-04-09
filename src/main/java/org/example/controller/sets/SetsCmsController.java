@@ -54,7 +54,6 @@ public class SetsCmsController {
         );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         setsService.delete(id);

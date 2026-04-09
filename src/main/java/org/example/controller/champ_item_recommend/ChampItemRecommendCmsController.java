@@ -38,7 +38,7 @@ public class ChampItemRecommendCmsController {
         );
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN')")
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         champItemRecommendService.delete(id);

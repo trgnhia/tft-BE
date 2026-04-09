@@ -55,7 +55,7 @@ public class ItemCmsController {
         return ResponseEntity.ok(ApiResponse.success(itemService.update(id, request)));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         itemService.delete(id);
