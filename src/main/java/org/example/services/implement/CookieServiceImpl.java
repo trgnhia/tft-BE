@@ -16,13 +16,16 @@ public class CookieServiceImpl implements CookieService {
     @Value("${server.servlet.context-path}")
     private String apiPrefix;
 
+    @Value("${cookie.same-site}")
+    private String cookieSameSite;
+
     @Override
     public ResponseCookie createAccessTokenCookie(String accessToken) {
         return buildCookieToken(securityProperties.getAccessTokenCookie(),
                 accessToken,
                 apiPrefix,
                 securityProperties.getAccessTokenExpirationMs(),
-                "Strict");
+                cookieSameSite);
     }
 
     @Override
@@ -31,7 +34,7 @@ public class CookieServiceImpl implements CookieService {
                 refreshToken,
                 securityProperties.getRefreshPath(),
                 securityProperties.getRefreshTokenExpirationMs(),
-                "Strict");
+                cookieSameSite);
     }
 
     @Override

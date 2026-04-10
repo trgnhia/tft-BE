@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.user.*;
+import org.example.security.SecurityUser;
 import org.example.services.UserService;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,6 +22,14 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasAnyRole('ADMIN','EDITOR','USER')")
 public class UserController {
     private final UserService userService;
+
+
+    @GetMapping("/my-info")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserDetailedResponse>> getMyProfile(@AuthenticationPrincipal SecurityUser securityUser) {
+        var user = userService.getDetailedById(securityUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(user));
+    }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
