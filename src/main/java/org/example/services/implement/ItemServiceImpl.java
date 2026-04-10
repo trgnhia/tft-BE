@@ -6,15 +6,22 @@ import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
+import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 import org.example.entities.Sets;
 import org.example.entities.item.Item;
 import org.example.mapper.ItemMapper;
+import org.example.repositories.ChampItemRecommendRepository;
+import org.example.repositories.ChampRepository;
 import org.example.repositories.ItemRepository;
 import org.example.repositories.SetsRepository;
 import org.example.services.ItemService;
 import org.example.util.MessageUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,24 +34,44 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepo;
     private final ItemMapper itemMapper;
     private final SetsRepository setRepo;
+    private final ChampItemRecommendRepository champItemRecommendRepo;
 
+    // ---------- PUBLIC SERVICES ----------
 
     @Override
     public List<ItemResponse> getAllPublishedItem() {
-        return itemRepo.findAllActiveWithSets().stream()
+        return itemRepo.findAllPublishedWithSets().stream()
                 .map(itemMapper::toItemResponse)
                 .toList();
     }
 
     @Override
     public ItemResponse getActiveItemById(Long id) {
-        Item item = itemRepo.findByIdAndDeletedFalse(id)
+        Item item = itemRepo.findPublishedById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM),
                         MessageUtils.getMessage(Constants.MessageKey.FIELD_ID),
                         String.valueOf(id)
                 ));
         return itemMapper.toItemResponse(item);
+    }
+
+    @Override
+    public PageResponse<ItemResponse> getPublishedItems(int page, int size, String keyword, Long setId) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        String normalizedKeyword = (keyword == null || keyword.trim().isEmpty())
+                ? null
+                : keyword.trim();
+
+        Page<Item> itemPage = itemRepo.searchItemsForPublic(normalizedKeyword, setId, pageable);
+        Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
+
+        return PageResponse.from(responsePage);
     }
 
     // ---------- CMS SERVICES ----------
@@ -61,6 +88,24 @@ public class ItemServiceImpl implements ItemService {
                 .map(itemMapper::toItemResponse)
                 .toList();
     }
+
+
+    @Override
+    public PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        String normalizedKeyword = (keyword == null || keyword.trim().isEmpty())
+                ? null
+                : keyword.trim();
+
+        Page<Item> itemPage = itemRepo.searchItemsForCms(normalizedKeyword, setId, pageable);
+        Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
+        return PageResponse.from(responsePage);
+    }
+
 
 
     @Override
@@ -115,6 +160,7 @@ public class ItemServiceImpl implements ItemService {
             );
         }
         item.setDeleted(true);
+        champItemRecommendRepo.softDeleteByItemId(id);
         itemRepo.save(item);
     }
 

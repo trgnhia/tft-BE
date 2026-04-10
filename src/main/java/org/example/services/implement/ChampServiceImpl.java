@@ -14,6 +14,7 @@ import org.example.dto.champs.UpdateChampRequest;
 import org.example.entities.Sets;
 import org.example.entities.champ.Champ;
 import org.example.mapper.ChampsMapper;
+import org.example.repositories.ChampItemRecommendRepository;
 import org.example.repositories.ChampRepository;
 import org.example.repositories.SetsRepository;
 import org.example.services.BaseService;
@@ -32,6 +33,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     private final ChampRepository champRepository;
     private final SetsRepository setsRepository;
     private final ChampsMapper champMapper;
+    private final ChampItemRecommendRepository champItemRecommendRepo;
     private final FilterUtil filterUtil;
 
     @Override
@@ -126,7 +128,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
                 ));
-
+        champItemRecommendRepo.softDeleteByChampionId(id);
         champRepository.delete(champ);
         log.info("[CHAMP] Deleted successfully id={} by user={}", id, getCurrentUserNameOrThrow());
     }
