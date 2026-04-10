@@ -1,7 +1,7 @@
-package org.example.repositories;
+package org.example.repositories.teamcomp;
 
 import org.example.entities.TeamComp;
-import org.example.repositories.custom.TeamCompRepositoryCustom;
+import org.example.repositories.teamcomp.custom.TeamCompRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,4 +1,4 @@
-package org.example.repositories.custom;
+package org.example.repositories.teamcomp.custom;
 
 
 import org.springframework.data.domain.Page;

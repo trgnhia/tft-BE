@@ -1,11 +1,11 @@
-package org.example.repositories;
+package org.example.repositories.teamcomp;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.example.repositories.custom.TeamCompRepositoryCustom;
+import org.example.repositories.teamcomp.custom.TeamCompRepositoryCustom;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 

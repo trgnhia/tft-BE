@@ -51,7 +51,9 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         return champRepository.findById(id)
                 .map(champMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.ERROR_NOT_FOUND));
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+                ));
     }
 
     @Override
@@ -61,21 +63,25 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         return champRepository.findBySlug(slug)
                 .map(champMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.CHAMP_SLUG_NOT_FOUND));
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+                ));
     }
 
     @Override
     @Transactional
     public ChampResponse create(CreateChampRequest request) {
-        log.info("[CHAMP] Creating new champ with slug: {}", request.getSlug());
         if (champRepository.existsBySlug(request.getSlug())) {
-            log.warn("[CHAMP] Create failed: Slug {} already exists", request.getSlug());
-            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXIST, request.getSlug());
+            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
         }
-
         Sets sets = setsRepository.findById(request.getSetId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.ERROR_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("[CHAMP] SetId {} not found", request.getSetId());
+                    return new ResourceNotFoundException(
+                            Constants.MessageKey.ERROR_NOT_FOUND,
+                            new Object[]{Constants.MessageKey.ENTITY_SETS, request.getSetId().toString()}
+                    );
+                });
 
         Champ champ = champMapper.toEntity(request);
         champ.setSets(sets);
@@ -83,7 +89,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         Champ savedChamp = champRepository.save(champ);
         log.info("[CHAMP] Created id={} slug={} by user={}",
                 savedChamp.getId(), savedChamp.getSlug(), getCurrentUserNameOrThrow());
-        return champMapper.toResponse(champRepository.save(champ));
+        return champMapper.toResponse(savedChamp);
     }
 
     @Override
@@ -94,12 +100,14 @@ public class ChampServiceImpl extends BaseService implements ChampService {
 
         Champ champ = champRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.CHAMP_NOT_FOUND));
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+                ));
 
         if (request.getSlug() != null && !request.getSlug().equals(champ.getSlug())
                 && champRepository.existsBySlugAndIdNot(request.getSlug(), id)) {
             log.warn("[CHAMP] Update failed: Slug {} already taken by another record", request.getSlug());
-            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXIST, request.getSlug());
+            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
         }
 
         champMapper.updateEntity(request, champ);
@@ -115,7 +123,9 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filterUtil.enableDeletedFilter();
         Champ champ = champRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.CHAMP_NOT_FOUND));
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+                ));
 
         champRepository.delete(champ);
         log.info("[CHAMP] Deleted successfully id={} by user={}", id, getCurrentUserNameOrThrow());
@@ -138,7 +148,9 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         return champRepository.findById(id)
                 .map(champMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.CHAMP_NOT_FOUND));
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+                ));
     }
 
     @Override
@@ -147,11 +159,14 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filterUtil.disableDeletedFilter();
         Champ champ = champRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.ERROR_NOT_FOUND));
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+                ));
 
         if (!champ.isDeleted()) {
             log.warn("[CHAMP-ADMIN] Restore failed: Champ id={} is not in deleted state", id);
-            throw new DataException(ErrorCode.INVALID_PARAMETER, Constants.MessageKey.ENTITY_CHAMP);
+            throw new DataException(ErrorCode.INVALID_PARAMETER,
+                    new Object[]{Constants.MessageKey.ENTITY_CHAMP});
         }
 
         champ.setDeleted(false);
