@@ -46,7 +46,7 @@ public class TraitController {
     }
 
     // ── Editor ───────────────────────────────────────────
-    @PostMapping("/editor/traits")
+    @PostMapping("/cms/traits")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<TraitResponse>> create(
             @RequestBody @Valid CreateTraitRequest request) {
@@ -56,7 +56,7 @@ public class TraitController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created));
     }
 
-    @PutMapping("/editor/traits/{id}")
+    @PutMapping("/cms/traits/{id}")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ApiResponse<TraitResponse> update(
             @PathVariable Long id,
@@ -65,7 +65,7 @@ public class TraitController {
         return ApiResponse.success(traitService.update(id, request));
     }
 
-    @DeleteMapping("/editor/traits/{id}")
+    @DeleteMapping("/cms/traits/{id}")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
@@ -74,7 +74,7 @@ public class TraitController {
     }
 
     // ── Admin ─────────────────────────────────────────────
-    @GetMapping("/admin/traits")
+    @GetMapping("/cms/admin/traits")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<TraitResponse>> getAllAdmin(
             @RequestParam(required = false) String keyword,
@@ -84,14 +84,14 @@ public class TraitController {
         return ApiResponse.success(traitService.getAllAdmin(keyword, pageable));
     }
 
-    @GetMapping("/admin/traits/{id}")
+    @GetMapping("/cms/admin/traits/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<TraitResponse> getByIdAdmin(@PathVariable Long id) {
         log.info("[GET] /admin/traits/{}", id);
         return ApiResponse.success(traitService.getByIdAdmin(id));
     }
 
-    @PatchMapping("/admin/traits/{id}/restore")
+    @PatchMapping("/cms/admin/traits/{id}/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> restore(@PathVariable Long id) {
         log.info("[PATCH] /admin/traits/{}/restore", id);
@@ -99,7 +99,7 @@ public class TraitController {
         return ApiResponse.success(null);
     }
 
-    @GetMapping("/traits/search")
+    @GetMapping("/cms/traits/search")
     public ApiResponse<PageResponse<TraitResponse>> search(
             @ModelAttribute TraitFilterRequest filter, // @ModelAttribute dùng để map Query Params vào Object
             Pageable pageable) {
@@ -107,14 +107,14 @@ public class TraitController {
         return ApiResponse.success(traitService.search(filter, pageable));
     }
 
-    @GetMapping("/admin/traits/stats")
+    @GetMapping("/cms/admin/traits/stats")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<TraitOverviewStatsResponse> getStats() {
         log.info("[GET] /admin/traits/stats");
         return ApiResponse.success(traitService.getStats());
     }
 
-    @PatchMapping("/admin/traits/bulk-restore")
+    @PatchMapping("/cms/admin/traits/bulk-restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> bulkRestore(@RequestBody BulkDeleteRequest request) {
         log.info("[PATCH] /admin/traits/bulk-restore count={}", request.getIds().size());
