@@ -18,6 +18,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/team-comp")
+@PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'USER')")
 public class TeamCompController {
     private final TeamCompService teamCompService;
 
@@ -63,7 +64,7 @@ public class TeamCompController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         teamCompService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null));
