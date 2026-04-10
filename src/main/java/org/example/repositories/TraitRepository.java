@@ -1,7 +1,6 @@
 package org.example.repositories;
 
 import jakarta.transaction.Transactional;
-import org.example.dto.trait.TraitFilterRequest;
 import org.example.entities.trait.Trait;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,8 +10,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +17,7 @@ import java.util.Optional;
 public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecificationExecutor<Trait> {
 
     boolean existsBySlug(String slug);
-
+    boolean existsBySlugAndIdNot(String slug, Long id);
     Optional<Trait> findById(Long id);
 
     Optional<Trait> findByIdAndDeletedFalse(Long id);

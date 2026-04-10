@@ -51,6 +51,7 @@ public final class Constants {
 
         //trait
         public static final String TRAIT_NOT_FOUND = "trait.not_found";
+        public static final String TRAIT_SLUG_EXISTS = "trait.slug.already_exists";
         // Trait Validation & Error
         public static final String TRAIT_SET_ID_NOT_NULL = "trait.setId.not_null";
         public static final String TRAIT_SLUG_NOT_BLANK = "trait.slug.not_blank";

@@ -66,7 +66,7 @@ public class TraitServiceImpl extends BaseService implements TraitService {
 
         if (traitRepository.existsBySlug(request.getSlug())) {
             log.warn("[TRAIT] Slug {} already exists", request.getSlug());
-            throw new ConflictException(request.getSlug());
+            throw new ConflictException(Constants.MessageKey.TRAIT_SLUG_EXISTS, request.getSlug());
         }
 
         var setEntity = setsRepository.findById(request.getSetId())

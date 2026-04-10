@@ -2,9 +2,7 @@ package org.example.common.exception.handler;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-
 import lombok.extern.slf4j.Slf4j;
-import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
@@ -43,7 +41,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleServerException(ServerException ex) {
         log.error("ServerException occurred: {}", ex.getMessage(), ex);
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + ex.getErrorCode().name(),
+                ERROR_LOG_PREFIX + ex.getErrorCode(),
                 ex.getArgs(),
                 "");
         return new ResponseEntity<>(
@@ -135,7 +133,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("Error ", ex);
         ErrorCode unexpectedCode = ErrorCode.UNEXPECTED_ERROR;
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + unexpectedCode,
+                ERROR_LOG_PREFIX + unexpectedCode.getCode(),
                 null,
                 "");
         return new ResponseEntity<>(

@@ -1,4 +1,4 @@
-package org.example.controller;
+package org.example.controller.champ;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +7,7 @@ import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.champs.*;
 import org.example.services.ChampService;
+import org.example.services.implement.ChampServiceImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,43 +16,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
 @RestController
-@RequestMapping
+@RequestMapping("/cms/champs")
 @RequiredArgsConstructor
 @Slf4j
-public class ChampController {
-    private final ChampService champService;
+public class ChampCmsController {
 
-    // public api /api/v1/champs
-    @GetMapping("/champs")
-    public ApiResponse<PageResponse<ChampResponse>> getAll(
-            @RequestParam(required = false) String keyword,
-            Pageable pageable) {
-        log.info("REST request to get all Champs with keyword: {}", keyword);
-        return ApiResponse.success(champService.getAll(keyword, pageable));
-    }
+    private final ChampServiceImpl champService;
 
-    @GetMapping("/champs/{id}")
-    public ApiResponse<ChampResponse> getById(@PathVariable Long id) {
-        log.info("REST request to get Champ by id: {}", id);
-        return ApiResponse.success(champService.getById(id));
-    }
-
-    @GetMapping("/champs/slug/{slug}")
-    public ApiResponse<ChampResponse> getBySlug(@PathVariable String slug) {
-        log.info("REST request to get Champ by slug: {}", slug);
-        return ApiResponse.success(champService.getBySlug(slug));
-    }
-
-    @GetMapping("/champs/set/{setId}")
-    public ApiResponse<List<ChampResponse>> getBySetId(@PathVariable Long setId) {
-        log.info("REST get champs by setId={}", setId);
-        return ApiResponse.success(champService.getBySetId(setId));
-    }
-
-    //editor them, sua, xoa
-    @PostMapping("/cms/champs")
+    @PostMapping
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<ChampResponse>> create(
             @RequestBody @Valid CreateChampRequest request) {
@@ -60,7 +33,7 @@ public class ChampController {
                 .body(ApiResponse.success(champService.create(request)));
     }
 
-    @PostMapping("/cms/champs/bulk")
+    @PostMapping("/bulk")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<ChampResponse>>> bulkCreate(
             @RequestBody @Valid BulkCreateRequest request) {
@@ -69,7 +42,7 @@ public class ChampController {
                 .body(ApiResponse.success(champService.bulkCreate(request)));
     }
 
-    @PutMapping("/cms/champs/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ApiResponse<ChampResponse> update(
             @PathVariable Long id,
@@ -78,7 +51,7 @@ public class ChampController {
         return ApiResponse.success(champService.update(id, request));
     }
 
-    @DeleteMapping("/cms/champs/{id}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         log.info("REST request to delete Champ id: {}", id);
@@ -86,7 +59,7 @@ public class ChampController {
         return ApiResponse.success(null);
     }
 
-    @DeleteMapping("/cms/champs/bulk")
+    @DeleteMapping("/bulk")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ApiResponse<Void> bulkDelete(@RequestBody @Valid BulkDeleteRequest request) {
         log.info("REST bulkDelete champs ids={}", request.getIds());
@@ -94,8 +67,7 @@ public class ChampController {
         return ApiResponse.success(null);
     }
 
-    //admin xem tất cả
-    @GetMapping("/cms/admin/champs")
+    @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<ChampResponse>> getAllAdmin(
             @RequestParam(required = false) String keyword,
@@ -104,14 +76,14 @@ public class ChampController {
         return ApiResponse.success(champService.getAllAdmin(keyword, pageable));
     }
 
-    @GetMapping("/cms/admin/champs/{id}")
+    @GetMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ChampResponse> getByIdAdmin(@PathVariable Long id) {
         log.info("REST request for ADMIN to get Champ id: {}", id);
         return ApiResponse.success(champService.getByIdAdmin(id));
     }
 
-    @GetMapping("/cms/admin/champs/search")
+    @GetMapping("/admin/search")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<ChampResponse>> searchAdmin(
             @ModelAttribute ChampFilterRequest filter,
@@ -120,14 +92,14 @@ public class ChampController {
         return ApiResponse.success(champService.searchAdmin(filter, pageable));
     }
 
-    @GetMapping("/cms/admin/champs/stats")
+    @GetMapping("/admin/stats")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ChampOverviewStatsResponse> getStats() {
         log.info("REST ADMIN get champ stats");
         return ApiResponse.success(champService.getStats());
     }
 
-    @PatchMapping("/cms/admin/champs/{id}/restore")
+    @PatchMapping("/admin/{id}/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> restore(@PathVariable Long id) {
         log.info("REST request to restore Champ id: {}", id);
@@ -135,7 +107,7 @@ public class ChampController {
         return ApiResponse.success(null);
     }
 
-    @PatchMapping("/cms/admin/champs/bulk/restore")
+    @PatchMapping("/admin/bulk/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> bulkRestore(@RequestBody @Valid BulkDeleteRequest request) {
         log.info("REST ADMIN bulkRestore champs ids={}", request.getIds());
