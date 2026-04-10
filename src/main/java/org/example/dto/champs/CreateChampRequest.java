@@ -25,6 +25,7 @@ public class CreateChampRequest {
     @NotBlank(message = "{" + Constants.MessageKey.CHAMP_SLUG_NOT_BLANK + "}")
     @Size(max = 100, message = "{" + Constants.MessageKey.CHAMP_SLUG_SIZE + "}")
     @Pattern(regexp = "^[a-z0-9-]+$", message = "{" + Constants.MessageKey.CHAMP_SLUG_PATTERN + "}")
+    @NotNull(message = "{" + Constants.MessageKey.CHAMP_SLUG_NOT_FOUND + "}")
     private String slug;
 
     @NotBlank(message = "{" + Constants.MessageKey.CHAMP_NAME_NOT_BLANK + "}")
