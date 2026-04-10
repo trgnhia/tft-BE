@@ -23,7 +23,6 @@ import java.util.List;
 public class ChampController {
     private final ChampService champService;
 
-    // public api /api/v1/champs
     @GetMapping("/champs")
     public ApiResponse<PageResponse<ChampResponse>> getAll(
             @RequestParam(required = false) String keyword,
@@ -51,7 +50,7 @@ public class ChampController {
     }
 
     //editor them, sua, xoa
-    @PostMapping("/editor/champs")
+    @PostMapping("/cms/champs")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<ChampResponse>> create(
             @RequestBody @Valid CreateChampRequest request) {
@@ -60,7 +59,7 @@ public class ChampController {
                 .body(ApiResponse.success(champService.create(request)));
     }
 
-    @PostMapping("/editor/champs/bulk")
+    @PostMapping("/cms/champs/bulk")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<ChampResponse>>> bulkCreate(
             @RequestBody @Valid BulkCreateRequest request) {
@@ -69,7 +68,7 @@ public class ChampController {
                 .body(ApiResponse.success(champService.bulkCreate(request)));
     }
 
-    @PutMapping("/editor/champs/{id}")
+    @PutMapping("/cms/champs/{id}")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ApiResponse<ChampResponse> update(
             @PathVariable Long id,
@@ -78,7 +77,7 @@ public class ChampController {
         return ApiResponse.success(champService.update(id, request));
     }
 
-    @DeleteMapping("/editor/champs/{id}")
+    @DeleteMapping("/cms/champs/{id}")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         log.info("REST request to delete Champ id: {}", id);
@@ -86,7 +85,7 @@ public class ChampController {
         return ApiResponse.success(null);
     }
 
-    @DeleteMapping("/editor/champs/bulk")
+    @DeleteMapping("/cms/champs/bulk")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
     public ApiResponse<Void> bulkDelete(@RequestBody @Valid BulkDeleteRequest request) {
         log.info("REST bulkDelete champs ids={}", request.getIds());
@@ -95,7 +94,7 @@ public class ChampController {
     }
 
     //admin xem tất cả
-    @GetMapping("/admin/champs")
+    @GetMapping("/cms/admin/champs")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<ChampResponse>> getAllAdmin(
             @RequestParam(required = false) String keyword,
@@ -104,14 +103,14 @@ public class ChampController {
         return ApiResponse.success(champService.getAllAdmin(keyword, pageable));
     }
 
-    @GetMapping("/admin/champs/{id}")
+    @GetMapping("/cms/admin/champs/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ChampResponse> getByIdAdmin(@PathVariable Long id) {
         log.info("REST request for ADMIN to get Champ id: {}", id);
         return ApiResponse.success(champService.getByIdAdmin(id));
     }
 
-    @GetMapping("/admin/champs/search")
+    @GetMapping("/cms/admin/champs/search")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<ChampResponse>> searchAdmin(
             @ModelAttribute ChampFilterRequest filter,
@@ -120,14 +119,14 @@ public class ChampController {
         return ApiResponse.success(champService.searchAdmin(filter, pageable));
     }
 
-    @GetMapping("/admin/champs/stats")
+    @GetMapping("/cms/admin/champs/stats")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ChampOverviewStatsResponse> getStats() {
         log.info("REST ADMIN get champ stats");
         return ApiResponse.success(champService.getStats());
     }
 
-    @PatchMapping("/admin/champs/{id}/restore")
+    @PatchMapping("/cms/admin/champs/{id}/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> restore(@PathVariable Long id) {
         log.info("REST request to restore Champ id: {}", id);
@@ -135,7 +134,7 @@ public class ChampController {
         return ApiResponse.success(null);
     }
 
-    @PatchMapping("/admin/champs/bulk/restore")
+    @PatchMapping("/cms/admin/champs/bulk/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> bulkRestore(@RequestBody @Valid BulkDeleteRequest request) {
         log.info("REST ADMIN bulkRestore champs ids={}", request.getIds());
