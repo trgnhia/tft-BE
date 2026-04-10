@@ -1,4 +1,4 @@
-package org.example.controller;
+package org.example.controller.teamcomp;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +17,9 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/team-comp")
+@RequestMapping("/cms/team-comp")
 @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'USER')")
-public class TeamCompController {
+public class TeamCompCmsController {
     private final TeamCompService teamCompService;
 
     @GetMapping
