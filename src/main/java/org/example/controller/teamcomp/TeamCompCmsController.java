@@ -1,4 +1,4 @@
-package org.example.controller;
+package org.example.controller.teamcomp;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,22 +17,10 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/team-comp")
+@RequestMapping("/cms/team-comp")
 @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'USER')")
-public class TeamCompController {
+public class TeamCompCmsController {
     private final TeamCompService teamCompService;
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<Page<TeamCompResponse>>> filter(
-            @RequestParam(required = false) Long setId,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) List<String> styles,
-            @RequestParam(required = false) Long championId,
-            @PageableDefault(page = 1, size = 10) Pageable pageable
-    ) {
-        Page<TeamCompResponse> response = teamCompService.filterTeamComps(setId, keyword, styles, championId, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")

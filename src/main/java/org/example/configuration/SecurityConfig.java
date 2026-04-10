@@ -38,6 +38,7 @@ public class SecurityConfig {
             "/champs/**",
             "/sets/**",
             "/items/**",
+            "/team-comp/**",
             "/auth/signin",
             "/auth/signup",
             "/auth/refresh",
