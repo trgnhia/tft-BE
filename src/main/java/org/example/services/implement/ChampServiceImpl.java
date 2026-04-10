@@ -92,7 +92,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         return champRepository.findBySetsId(setId)
                 .stream()
                 .map(champMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -164,7 +164,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP] bulkCreate count={}", request.getChamps().size());
         return request.getChamps().stream()
                 .map(this::create)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -268,17 +268,12 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                 .stream().collect(Collectors.toMap(
                         r -> (Integer) r[0], r -> (Long) r[1]));
 
-        Map<String, Long> byTier = champRepository.countGroupByTier()
-                .stream().collect(Collectors.toMap(
-                        r -> (String) r[0], r -> (Long) r[1]));
-
         return ChampOverviewStatsResponse.builder()
                 .totalChamps(total)
                 .totalDeleted(deleted)
                 .totalActive(active)
                 .countBySet(bySet)
                 .countByCost(byCost)
-                .countByTier(byTier)
                 .build();
     }
 
