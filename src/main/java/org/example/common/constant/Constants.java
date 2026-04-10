@@ -13,8 +13,10 @@ public final class Constants {
     public static final class MessageKey {
         private MessageKey() {}
 
-        public static final String ERROR_ALREADY_EXISTS = "error.ALREADY_EXISTS";
+        public static final String ERROR_ALREADY_EXISTS = "error.ALREADY_EXIST";
         public static final String ERROR_NOT_FOUND = "error.NOT_FOUND";
+
+
         public static final String ENTITY_SETS = "entity.sets";
         public static final String FIELD_ID = "field.id";
         public static final String FIELD_SETS_NAME = "field.sets.name";
@@ -68,8 +70,6 @@ public final class Constants {
         //champ
         public static final String CHAMP_SLUG_NOT_FOUND = "champ.slug.not_found";
         public static final String CHAMP_SLUG_EXISTS = "champ.slug.already_exists";
-        public static final String CHAMP_ID_NOT_NULL = "champ.id.not_null";
-        public static final String CHAMP_ID_POSITIVE = "champ.id.positive";
         public static final String CHAMP_SET_ID_NOT_NULL = "champ.setId.not_null";
         public static final String CHAMP_SLUG_NOT_BLANK = "champ.slug.not_blank";
         public static final String CHAMP_SLUG_SIZE = "champ.slug.size";
@@ -79,8 +79,6 @@ public final class Constants {
         public static final String CHAMP_IMAGE_URL_SIZE = "champ.imageUrl.size";
 
         //champstats
-        public static final String CHAMP_STATS_COST_MIN = "champ.stats.cost.min";
-        public static final String CHAMP_STATS_COST_MAX = "champ.stats.cost.max";
         public static final String CHAMP_STATS_HP_SIZE = "champ.stats.hp.size";
         public static final String CHAMP_STATS_AD_SIZE = "champ.stats.ad.size";
         public static final String CHAMP_STATS_HP_NOT_EMPTY = "champ.stats.hp.not_empty";

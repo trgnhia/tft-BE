@@ -69,7 +69,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataException(DataException ex) {
         log.error("DataException Error ", ex);
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + ex.getErrorCode().name(),
+                ERROR_LOG_PREFIX + ex.getErrorCode(),
                 ex.getArgs(),
                 "");
         return new ResponseEntity<>(
@@ -82,7 +82,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("ConflictException Error ", ex);
 
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + ex.getErrorCode().name(),
+                ERROR_LOG_PREFIX + ex.getErrorCode(),
                 (Object[]) ex.getArgs()
         );
 
@@ -135,7 +135,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("Error ", ex);
         ErrorCode unexpectedCode = ErrorCode.UNEXPECTED_ERROR;
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + unexpectedCode.name(),
+                ERROR_LOG_PREFIX + unexpectedCode,
                 null,
                 "");
         return new ResponseEntity<>(
@@ -148,7 +148,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
 
         String msg = MessageUtils.getMessage(
-                ERROR_LOG_PREFIX + ex.getErrorCode().name(),
+                ERROR_LOG_PREFIX + ex.getErrorCode(),
                 (Object[]) ex.getArgs()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

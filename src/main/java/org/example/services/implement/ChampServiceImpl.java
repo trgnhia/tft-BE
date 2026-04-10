@@ -99,7 +99,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     @Transactional
     public ChampResponse create(CreateChampRequest request) {
         if (champRepository.existsBySlug(request.getSlug())) {
-            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
+            throw new ConflictException(Constants.MessageKey.CHAMP_SLUG_EXISTS, request.getSlug());
         }
         Sets sets = setsRepository.findById(request.getSetId())
                 .orElseThrow(() -> {
