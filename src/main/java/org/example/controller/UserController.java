@@ -26,8 +26,8 @@ public class UserController {
 
     @GetMapping("/my-info")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<UserDetailedResponse>> getMyProfile(@AuthenticationPrincipal SecurityUser securityUser) {
-        var user = userService.getDetailedById(securityUser.getId());
+    public ResponseEntity<ApiResponse<UserInfoResponse>> getMyProfile(@AuthenticationPrincipal SecurityUser securityUser) {
+        var user = userService.getMyInfo(securityUser.getId());
         return ResponseEntity.ok(ApiResponse.success(user));
     }
 

@@ -158,10 +158,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
 
+        String combinedArgs = String.join(" ", ex.getArgs());
+
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
-                (Object[]) ex.getArgs()
+                combinedArgs
         );
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
     }
