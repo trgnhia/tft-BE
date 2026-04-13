@@ -13,7 +13,6 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatMessageResponse {
-
     private Long messageId;
     private Long conversationId;
     private Long senderId;
