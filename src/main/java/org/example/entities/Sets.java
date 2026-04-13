@@ -10,7 +10,8 @@ import org.example.common.entity.AuditableEntity;
 @Table(name = "set")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Sets extends AuditableEntity {
+public class
+Sets extends AuditableEntity {
     @Column(nullable = false, length = 100)
     private String name;
     @ManyToOne (fetch = FetchType.LAZY)

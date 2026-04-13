@@ -2,7 +2,7 @@ package org.example.controller.teamcomp;
 
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
-import org.example.dto.teamcomp.*;
+import org.example.dto.teamcomp.TeamCompResponse;
 import org.example.services.TeamCompService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +17,6 @@ import java.util.List;
 @RequestMapping("/team-comp")
 public class TeamCompController {
     private final TeamCompService teamCompService;
-
     @GetMapping
     public ResponseEntity<ApiResponse<Page<TeamCompResponse>>> filter(
             @RequestParam(required = false) Long setId,

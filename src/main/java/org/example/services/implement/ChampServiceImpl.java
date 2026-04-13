@@ -8,21 +8,26 @@ import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
-import org.example.dto.champs.ChampResponse;
-import org.example.dto.champs.CreateChampRequest;
-import org.example.dto.champs.UpdateChampRequest;
+import org.example.dto.champs.*;
 import org.example.entities.Sets;
 import org.example.entities.champ.Champ;
 import org.example.mapper.ChampsMapper;
+import org.example.repositories.ChampItemRecommendRepository;
 import org.example.repositories.ChampRepository;
+import org.example.repositories.spec.ChampSpecification;
 import org.example.repositories.SetsRepository;
 import org.example.services.BaseService;
 import org.example.services.ChampService;
 import org.example.util.FilterUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -32,6 +37,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     private final ChampRepository champRepository;
     private final SetsRepository setsRepository;
     private final ChampsMapper champMapper;
+    private final ChampItemRecommendRepository champItemRecommendRepo;
     private final FilterUtil filterUtil;
 
     @Override
@@ -69,10 +75,31 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     }
 
     @Override
+    public PageResponse<ChampResponse> search(ChampFilterRequest filter, Pageable pageable) {
+        log.info("[CHAMP] search filter={} page={}", filter, pageable.getPageNumber());
+        filterUtil.enableDeletedFilter();
+        // không cho phép public filter deleted
+        filter.setDeleted(null);
+        Specification<Champ> spec = ChampSpecification.withFilter(filter);
+        Page<Champ> page = champRepository.findAll(spec, pageable);
+        return PageResponse.from(page.map(champMapper::toResponse));
+    }
+
+    @Override
+    public List<ChampResponse> getBySetId(Long setId) {
+        log.info("[CHAMP] getBySetId setId={}", setId);
+        filterUtil.enableDeletedFilter();
+        return champRepository.findBySetsId(setId)
+                .stream()
+                .map(champMapper::toResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public ChampResponse create(CreateChampRequest request) {
         if (champRepository.existsBySlug(request.getSlug())) {
-            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
+            throw new ConflictException(Constants.MessageKey.CHAMP_SLUG_EXISTS, request.getSlug());
         }
         Sets sets = setsRepository.findById(request.getSetId())
                 .orElseThrow(() -> {
@@ -126,9 +153,34 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
                 ));
-
+        champItemRecommendRepo.softDeleteByChampionId(id);
         champRepository.delete(champ);
         log.info("[CHAMP] Deleted successfully id={} by user={}", id, getCurrentUserNameOrThrow());
+    }
+
+    @Override
+    @Transactional
+    public List<ChampResponse> bulkCreate(BulkCreateRequest request) {
+        log.info("[CHAMP] bulkCreate count={}", request.getChamps().size());
+        return request.getChamps().stream()
+                .map(this::create)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void bulkDelete(BulkDeleteRequest request) {
+        log.info("[CHAMP] bulkDelete ids={}", request.getIds());
+        filterUtil.enableDeletedFilter();
+        List<Champ> champs = champRepository.findAllById(request.getIds());
+        if (champs.size() != request.getIds().size()) {
+            throw new ResourceNotFoundException(
+                    Constants.MessageKey.ERROR_NOT_FOUND,
+                    new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+            );
+        }
+        champRepository.deleteAll(champs);
+        log.info("[CHAMP] bulkDeleted count={} by user={}", champs.size(), getCurrentUserNameOrThrow());
     }
 
     @Override
@@ -172,4 +224,57 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         champ.setDeleted(false);
         log.info("[CHAMP-ADMIN] Restored successfully id={} by user={}", id, getCurrentUserNameOrThrow());
     }
+
+    @Override
+    public PageResponse<ChampResponse> searchAdmin(ChampFilterRequest filter, Pageable pageable) {
+        log.info("[CHAMP-ADMIN] searchAdmin filter={}", filter);
+        filterUtil.disableDeletedFilter();
+        Specification<Champ> spec = ChampSpecification.withFilter(filter);
+        Page<Champ> page = champRepository.findAll(spec, pageable);
+        return PageResponse.from(page.map(champMapper::toResponse));
+    }
+
+
+    @Override
+    @Transactional
+    public void bulkRestore(BulkDeleteRequest request) {
+        log.info("[CHAMP-ADMIN] bulkRestore ids={}", request.getIds());
+        filterUtil.disableDeletedFilter();
+        List<Champ> champs = champRepository.findAllById(request.getIds());
+        champs.forEach(c -> {
+            if (!c.isDeleted()) {
+                throw new DataException(ErrorCode.INVALID_PARAMETER,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP});
+            }
+            c.setDeleted(false);
+        });
+        log.info("[CHAMP-ADMIN] bulkRestored count={} by user={}", champs.size(), getCurrentUserNameOrThrow());
+    }
+
+    @Override
+    public ChampOverviewStatsResponse getStats() {
+        log.info("[CHAMP-ADMIN] getStats");
+        filterUtil.disableDeletedFilter();
+
+        long total   = champRepository.count();
+        long deleted = champRepository.countByDeletedTrue();
+        long active  = champRepository.countByDeletedFalse();
+
+        Map<String, Long> bySet = champRepository.countGroupBySet()
+                .stream().collect(Collectors.toMap(
+                        r -> (String) r[0], r -> (Long) r[1]));
+
+        Map<Integer, Long> byCost = champRepository.countGroupByCost()
+                .stream().collect(Collectors.toMap(
+                        r -> (Integer) r[0], r -> (Long) r[1]));
+
+        return ChampOverviewStatsResponse.builder()
+                .totalChamps(total)
+                .totalDeleted(deleted)
+                .totalActive(active)
+                .countBySet(bySet)
+                .countByCost(byCost)
+                .build();
+    }
+
 }

@@ -18,7 +18,6 @@ public interface ChampsMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "sets", ignore = true)
     @Mapping(target = "deleted", ignore = true)
-    @Mapping(target = "cost", ignore = true)
     @Mapping(target = "stats", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

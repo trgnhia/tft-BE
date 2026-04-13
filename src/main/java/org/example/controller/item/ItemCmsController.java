@@ -3,6 +3,7 @@ package org.example.controller.item;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
+import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 import org.example.services.ItemService;
@@ -20,10 +21,22 @@ public class ItemCmsController {
 
     private final ItemService itemService;
 
+//    @GetMapping
+//    public ResponseEntity<ApiResponse<List<ItemResponse>>> getAll() {
+//        return ResponseEntity.ok(
+//                ApiResponse.success(itemService.getAllItem())
+//        );
+//    }
+
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ItemResponse>>> getAll() {
+    public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long setId
+    ) {
         return ResponseEntity.ok(
-                ApiResponse.success(itemService.getAllItem())
+                ApiResponse.success(itemService.getItemsForCms(page, size, keyword, setId))
         );
     }
 
@@ -42,7 +55,7 @@ public class ItemCmsController {
         return ResponseEntity.ok(ApiResponse.success(itemService.update(id, request)));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         itemService.delete(id);
