@@ -1,4 +1,4 @@
-package org.example.configuration;
+package org.example.core.logging.interceptor;
 
 import lombok.RequiredArgsConstructor;
 import org.example.common.enums.ErrorCode;
@@ -15,8 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
-
-import java.security.Principal;
 
 @Component
 @RequiredArgsConstructor

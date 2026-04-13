@@ -1,6 +1,7 @@
 package org.example.configuration;
 
 import lombok.RequiredArgsConstructor;
+import org.example.core.logging.interceptor.JwtChannelInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

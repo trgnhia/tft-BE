@@ -20,6 +20,7 @@ import org.example.services.ChatService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 
@@ -56,8 +57,46 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ConversationResponse> getMyConversations(Long currentUserId) {
-        List<Conversation> conversations = conversationRepo.findAllByUserIdOrderByUpdatedAtDesc(currentUserId);
-        return conversationMapper.toResponseList(conversations);
+        List<Object[]> rows = conversationRepo.findConversationWithDetails(currentUserId);
+
+        return rows.stream()
+                .map(this::mapConversationRow)
+                .toList();
+    }
+
+    private ConversationResponse mapConversationRow(Object[] row) {
+        return ConversationResponse.builder()
+                .id(toLong(row[0]))
+                .createdAt(toInstant(row[1]))
+                .updatedAt(toInstant(row[2]))
+                .otherUserId(toLong(row[3]))
+                .otherUsername((String) row[4])
+                .lastMessage((String) row[5])
+                .lastMessageAt(toInstant(row[6]))
+                .build();
+    }
+
+    private Long toLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return ((Number) value).longValue();
+    }
+
+    private Instant toInstant(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toInstant();
+        }
+
+        if (value instanceof Instant instant) {
+            return instant;
+        }
+
+        throw new IllegalArgumentException("Cannot convert value to Instant: " + value);
     }
 
     @Override
