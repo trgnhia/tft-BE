@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -109,12 +110,15 @@ public class ChatServiceImpl implements ChatService {
 
         Page<Message> messagePage = messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
 
-        List<MessageResponse> orderedMessages = messagePage.getContent()
-                .stream()
-                .map(messageMapper::toResponse)
-                .toList();
+        List<MessageResponse> orderedMessages = new ArrayList<>(
+                messagePage.getContent()
+                        .stream()
+                        .map(messageMapper::toResponse)
+                        .toList()
+        );
 
         Collections.reverse(orderedMessages);
+
         return new PageImpl<>(orderedMessages, pageable, messagePage.getTotalElements());
     }
 
