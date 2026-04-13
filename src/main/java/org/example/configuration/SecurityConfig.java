@@ -39,6 +39,8 @@ public class SecurityConfig {
             "/sets/**",
             "/items/**",
             "/team-comp/**",
+            "/ws/**",
+            "/ws",
 
             "/auth/signin",
             "/auth/signup",
