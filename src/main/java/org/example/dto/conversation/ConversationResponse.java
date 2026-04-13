@@ -1,9 +1,12 @@
 package org.example.dto.conversation;
-import lombok.Builder;
+import lombok.*;
 
 import java.time.Instant;
 
-@Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ConversationResponse{
     private Long id;
     private Instant createdAt;

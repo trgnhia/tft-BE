@@ -12,6 +12,7 @@ public interface ConversationParticipantRepository extends JpaRepository<Convers
 
     List<ConversationParticipant> findByUserId(Long userId);
 
+    boolean existsByConversationIdAndUserId (Long userId, Long conversationId);
     @Query("""
         select cp1.conversation.id
         from ConversationParticipant cp1
