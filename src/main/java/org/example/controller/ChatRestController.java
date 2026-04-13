@@ -2,14 +2,15 @@ package org.example.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
+import org.example.core.api.PageResponse;
 import org.example.dto.chat.MessageResponse;
 import org.example.dto.conversation.ConversationResponse;
 import org.example.services.ChatService;
 import org.example.util.SecurityUtil;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -28,8 +29,18 @@ public class ChatRestController {
     }
 
     @GetMapping("/conversations/{conversationId}/messages")
-    public ApiResponse<List<MessageResponse>> getMessagesByConversation(@PathVariable Long conversationId) {
+    public ApiResponse<PageResponse<MessageResponse>> getMessagesByConversation(
+            @PathVariable Long conversationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
         Long currentUserId = securityUtil.getCurrentUserIdOrThrow();
-        return ApiResponse.success(chatService.getMessagesByConversation(currentUserId, conversationId));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<MessageResponse> messagePage =
+                chatService.getMessagesByConversation(currentUserId, conversationId, pageable);
+
+        return ApiResponse.success(PageResponse.from(messagePage));
     }
 }

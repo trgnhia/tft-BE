@@ -17,11 +17,15 @@ import org.example.repositories.ConversationRepository;
 import org.example.repositories.MessageRepository;
 import org.example.repositories.UserRepository;
 import org.example.services.ChatService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -100,11 +104,18 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public List<MessageResponse> getMessagesByConversation(Long currentUserId, Long conversationId) {
+    public Page<MessageResponse>  getMessagesByConversation(Long currentUserId, Long conversationId, Pageable pageable) {
         validateParticipant(currentUserId, conversationId);
 
-        List<Message> messages = messageRepo.findByConversationIdOrderByCreatedAtAsc(conversationId);
-        return messageMapper.toResponseList(messages);
+        Page<Message> messagePage = messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+
+        List<MessageResponse> orderedMessages = messagePage.getContent()
+                .stream()
+                .map(messageMapper::toResponse)
+                .toList();
+
+        Collections.reverse(orderedMessages);
+        return new PageImpl<>(orderedMessages, pageable, messagePage.getTotalElements());
     }
 
     @Override
