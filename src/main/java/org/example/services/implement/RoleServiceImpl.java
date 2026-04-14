@@ -77,10 +77,10 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Page<RoleDto> getAll(String keyword, Pageable pageable) {
         if (keyword == null || keyword.trim().isBlank()) {
-            return roleRepository.findAll(pageable)
+            return roleRepository.findAllNonDelete(pageable)
                     .map(roleMapper::toDto);
         }
-        return roleRepository.findAllWithKeyword(keyword.toUpperCase(), pageable)
+        return roleRepository.findAllNonDeleteWithKeyword(keyword.toUpperCase(), pageable)
                 .map(roleMapper::toDto);
     }
 
