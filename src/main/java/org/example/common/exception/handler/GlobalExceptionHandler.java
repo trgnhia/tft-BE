@@ -18,7 +18,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -93,6 +96,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
         log.error("AccessDeniedException Error ", ex);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+            // Treat as 401 Unauthorized if user is not authenticated
+            ErrorCode unauthorize = ErrorCode.UNAUTHORIZED;
+            String msg = MessageUtils.getMessage(ERROR_LOG_PREFIX + unauthorize.name(), null, "");
+            return new ResponseEntity<>(
+                    ApiResponse.error(msg, unauthorize.getCode()), HttpStatus.UNAUTHORIZED
+            );
+        }
+
         ErrorCode forbiddenCode = ErrorCode.PERMISSION_DENIED;
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + forbiddenCode.name(),
@@ -145,10 +158,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
 
+        String combinedArgs = String.join(" ", ex.getArgs());
+
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
-                (Object[]) ex.getArgs()
+                combinedArgs
         );
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
     }

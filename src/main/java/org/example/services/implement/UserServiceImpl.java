@@ -97,6 +97,21 @@ public class UserServiceImpl implements UserService {
         return mapToUserDetailed(saved);
     }
 
+    @Override
+    public UserInfoResponse getMyInfo(Long userId) {
+        User user = getOrThrowUser(userId);
+        return mapToUserInfo(user);
+    }
+
+    private UserInfoResponse mapToUserInfo(User user) {
+        return UserInfoResponse.builder()
+                .userName(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole().getCode().toString())
+                .permissions(resolvePermissions(user.getRole().getPermissions()))
+                .build();
+    }
+
     private UserDetailedResponse mapToUserDetailed(User user) {
         return UserDetailedResponse.builder()
                 .userName(user.getUsername())
