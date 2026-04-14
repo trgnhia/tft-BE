@@ -1,7 +1,9 @@
 package org.example.dto.user;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
 @Builder
-public record PermissionDto(String permission, String description) {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record PermissionDto(Long id, String code, String name, String description) {
 }
