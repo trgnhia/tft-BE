@@ -1,6 +1,7 @@
 package org.example.core.logging.interceptor;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ServerException;
 import org.example.security.SecurityUser;
@@ -16,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtChannelInterceptor implements ChannelInterceptor {
