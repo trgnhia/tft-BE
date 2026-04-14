@@ -65,7 +65,6 @@ public record ImportExecutionResult(
 
     @Override
     public String toString() {
-        // Avoid dumping raw bytes into logs; print length only.
         return "ImportExecutionResult[" +
                 "successCount=" + successCount +
                 ", failedCount=" + failedCount +
