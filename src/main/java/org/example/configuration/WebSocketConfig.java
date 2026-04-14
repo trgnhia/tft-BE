@@ -23,13 +23,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // client gửi lên server cho @MessageMapping xử lý
         registry.setApplicationDestinationPrefixes("/app");
-
-        // broker dùng để server push xuống client
         registry.enableSimpleBroker("/topic", "/queue");
-
-        // prefix cho convertAndSendToUser(...)
         registry.setUserDestinationPrefix("/user");
     }
 
@@ -44,7 +39,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
-        // .withSockJS(); // bật nếu FE dùng SockJS
+        // .withSockJS();
     }
 
     @Override

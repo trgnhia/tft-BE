@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.chat.ChatMessageResponse;
@@ -21,7 +22,7 @@ public class WsChatController {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     @MessageMapping("/chat.send")
-    public void sendMessage(@Payload ChatSendRequest request, Principal principal) {
+    public void sendMessage(@Valid @Payload ChatSendRequest request, Principal principal) {
         Long senderId = Long.valueOf(principal.getName());
         ChatMessageResponse response = chatService.sendMessage(senderId, request);
 

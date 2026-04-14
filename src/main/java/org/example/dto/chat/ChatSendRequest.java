@@ -13,10 +13,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatSendRequest {
-    @NotNull
+
+    @NotNull(message = "{chat.receiver.id.not.null}")
     private Long receiverId;
 
-    @NotBlank
-    @Size(max = 4000)
+    @NotBlank(message = "{chat.message.content.not.blank}")
+    @Size(max = 4000, message = "{chat.message.content.max.size}")
     private String content;
 }

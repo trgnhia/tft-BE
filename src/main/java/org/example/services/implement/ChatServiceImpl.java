@@ -1,5 +1,9 @@
 package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
+import org.example.common.constant.Constants;
+import org.example.common.enums.ErrorCode;
+import org.example.common.exception.ConflictException;
+import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.dto.chat.ChatMessageResponse;
 import org.example.dto.chat.ChatSendRequest;
@@ -10,13 +14,13 @@ import org.example.entities.conversation.Conversation;
 import org.example.entities.conversation.ConversationParticipant;
 import org.example.entities.conversation.Message;
 import org.example.mapper.ChatMessageMapper;
-import org.example.mapper.ConversationMapper;
 import org.example.mapper.MessageMapper;
 import org.example.repositories.ConversationParticipantRepository;
 import org.example.repositories.ConversationRepository;
 import org.example.repositories.MessageRepository;
 import org.example.repositories.UserRepository;
 import org.example.services.ChatService;
+import org.example.util.MessageUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -37,18 +41,18 @@ public class ChatServiceImpl implements ChatService {
     private final ConversationParticipantRepository conversationParticipantRepo;
     private final UserRepository userRepo;
     private final MessageRepository messageRepo;
-    private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
     private final ChatMessageMapper chatMessageMapper;
-
     @Override
     @Transactional
     public ChatMessageResponse sendMessage(Long senderId, ChatSendRequest request) {
         Long receiverId = request.getReceiverId();
-        validateNotSelfChat(senderId, receiverId);
 
-        User sender = findUserById(senderId, "Sender not found");
-        User receiver = findUserById(receiverId, "Receiver not found");
+        validateNotSelfChat(senderId, receiverId);
+        validateMessageContent(request.getContent());
+
+        User sender = findUserById(senderId);
+        User receiver = findUserById(receiverId);
 
         Conversation conversation = findOrCreateConversation(sender, receiver);
         Message message = buildMessage(conversation, sender, request.getContent());
@@ -67,6 +71,71 @@ public class ChatServiceImpl implements ChatService {
         return rows.stream()
                 .map(this::mapConversationRow)
                 .toList();
+    }
+
+    @Override
+    public Page<MessageResponse> getMessagesByConversation(Long currentUserId, Long conversationId, Pageable pageable) {
+        validateParticipant(currentUserId, conversationId);
+
+        Page<Message> messagePage = messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+
+        List<MessageResponse> orderedMessages = new ArrayList<>(
+                messagePage.getContent()
+                        .stream()
+                        .map(messageMapper::toResponse)
+                        .toList()
+        );
+
+        Collections.reverse(orderedMessages);
+
+        return new PageImpl<>(orderedMessages, pageable, messagePage.getTotalElements());
+    }
+
+    @Override
+    @Transactional
+    public Long getOrCreateConversation(Long currentUserId, Long otherUserId) {
+        validateNotSelfChat(currentUserId, otherUserId);
+
+        User currentUser = findUserById(currentUserId);
+        User otherUser = findUserById(otherUserId);
+
+        return findOrCreateConversation(currentUser, otherUser).getId();
+    }
+
+    private User findUserById(Long id) {
+        return userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_USER)
+                ));
+    }
+
+    private void validateNotSelfChat(Long senderId, Long receiverId) {
+        if (senderId.equals(receiverId)) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.CHAT_SELF_NOT_ALLOWED)
+            );
+        }
+    }
+
+    private void validateParticipant(Long currentUserId, Long conversationId) {
+        boolean isParticipant = conversationParticipantRepo
+                .existsByConversationIdAndUserId(conversationId, currentUserId);
+
+        if (!isParticipant) {
+            throw new DataException(
+                    ErrorCode.INCOMPLETE_DATA,
+                    MessageUtils.getMessage(Constants.MessageKey.CHAT_PARTICIPANT_REQUIRED)
+            );
+        }
+    }
+
+    private void validateMessageContent(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            throw new DataException(
+                    ErrorCode.INCOMPLETE_DATA,
+                    MessageUtils.getMessage(Constants.MessageKey.CHAT_MESSAGE_CONTENT_BLANK)
+            );
+        }
     }
 
     private ConversationResponse mapConversationRow(Object[] row) {
@@ -101,55 +170,9 @@ public class ChatServiceImpl implements ChatService {
             return instant;
         }
 
-        throw new IllegalArgumentException("Cannot convert value to Instant: " + value);
-    }
-
-    @Override
-    public Page<MessageResponse>  getMessagesByConversation(Long currentUserId, Long conversationId, Pageable pageable) {
-        validateParticipant(currentUserId, conversationId);
-
-        Page<Message> messagePage = messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
-
-        List<MessageResponse> orderedMessages = new ArrayList<>(
-                messagePage.getContent()
-                        .stream()
-                        .map(messageMapper::toResponse)
-                        .toList()
+        throw new IllegalStateException(
+                MessageUtils.getMessage(Constants.MessageKey.INTERNAL_INSTANT_CONVERSION_FAILED)
         );
-
-        Collections.reverse(orderedMessages);
-
-        return new PageImpl<>(orderedMessages, pageable, messagePage.getTotalElements());
-    }
-
-    @Override
-    @Transactional
-    public Long getOrCreateConversation(Long currentUserId, Long otherUserId) {
-        validateNotSelfChat(currentUserId, otherUserId);
-
-        User currentUser = findUserById(currentUserId, "Current user not found");
-        User otherUser = findUserById(otherUserId, "Other user not found");
-
-        return findOrCreateConversation(currentUser, otherUser).getId();
-    }
-
-
-    private User findUserById(Long id, String message) {
-        return userRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(message));
-    }
-
-    private void validateNotSelfChat(Long senderId, Long receiverId) {
-        if (senderId.equals(receiverId)) {
-            throw new IllegalArgumentException("Cannot chat with yourself");
-        }
-    }
-
-    private void validateParticipant(Long currentUserId, Long conversationId) {
-        boolean isParticipant = conversationParticipantRepo.existsByConversationIdAndUserId(conversationId, currentUserId);
-        if (!isParticipant) {
-            throw new IllegalArgumentException("You are not a participant of this conversation");
-        }
     }
 
     private Conversation findOrCreateConversation(User currentUser, User otherUser) {
@@ -186,5 +209,4 @@ public class ChatServiceImpl implements ChatService {
                 .read(false)
                 .build();
     }
-
 }
