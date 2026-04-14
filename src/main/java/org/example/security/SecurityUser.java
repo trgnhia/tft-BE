@@ -35,7 +35,7 @@ public class SecurityUser implements UserDetails {
         this.lastLogoutAt = user.getLastLogoutAt();
         this.passwordHashed = user.getPasswordHash();
 
-        this.roleCode = user.getRole().getCode().name();
+        this.roleCode = user.getRole().getCode();
         Set<GrantedAuthority> auths = new HashSet<>();
         auths.add(new SimpleGrantedAuthority("ROLE_" + this.roleCode));
 

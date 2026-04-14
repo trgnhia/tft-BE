@@ -28,11 +28,18 @@ public final class Constants {
         public static final String CHAMP_COST_MIN = "champ.cost.min";
         public static final String CHAMP_COST_MAX = "champ.cost.max";
 
+        public static final String FIELD_MESSAGE_CONTENT = "field.message.content";
+        public static final String CHAT_SELF_NOT_ALLOWED = "chat.self.not.allowed";
+        public static final String CHAT_PARTICIPANT_REQUIRED = "chat.participant.required";
+        public static final String CHAT_MESSAGE_CONTENT_BLANK = "chat.message.content.blank";
+        public static final String INTERNAL_INSTANT_CONVERSION_FAILED = "internal.instant.conversion.failed";
+
         // entity name
         public static final String ENTITY_CHAMP = "entity.champ";
         public static final String ENTITY_CHAMP_ITEM_RECOMMEND = "entity.champ_item_recommend";
         public static final String ENTITY_TRAIT = "entity.trait";
         public static final String ENTITY_USER = "entity.user";
+        public static final String ENTITY_CONVERSATION = "entity.conversation";
         public static final String ENTITY_TEAMS = "entity.teams";
 
 

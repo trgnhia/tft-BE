@@ -4,22 +4,21 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.example.annotations.Password;
-import org.example.common.enums.RoleCode;
 
 public record CreateUserRequest(
-        @NotBlank(message = "{error.USERNAME_BLANK}")
+        @NotBlank
         String userName,
 
-        @NotBlank(message = "{error.EMAIL_BLANK}")
+        @NotBlank
         @Email(message = "{error.EMAIL_INVALID}")
         String email,
 
         @Password
         String defaultPassword,
 
-        @NotNull(message = "{error.ROLE_ID_NULL}")
+        @NotNull
         Long roleId,
 
-        @NotNull(message = "{error.ROLE_CODE_NULL}")
-        RoleCode roleCode) {
+        @NotNull
+        String roleCode) {
 }

@@ -64,9 +64,7 @@ public class ItemServiceImpl implements ItemService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        String normalizedKeyword = (keyword == null || keyword.trim().isEmpty())
-                ? null
-                : keyword.trim();
+        String normalizedKeyword = (keyword == null) ? "" : keyword.trim();
 
         Page<Item> itemPage = itemRepo.searchItemsForPublic(normalizedKeyword, setId, pageable);
         Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
@@ -89,7 +87,6 @@ public class ItemServiceImpl implements ItemService {
                 .toList();
     }
 
-
     @Override
     public PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId) {
         Pageable pageable = PageRequest.of(
@@ -97,14 +94,17 @@ public class ItemServiceImpl implements ItemService {
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        String normalizedKeyword = (keyword == null || keyword.trim().isEmpty())
-                ? null
-                : keyword.trim();
+
+        String normalizedKeyword = (keyword == null) ? "" : keyword.trim();
 
         Page<Item> itemPage = itemRepo.searchItemsForCms(normalizedKeyword, setId, pageable);
         Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
+
         return PageResponse.from(responsePage);
     }
+
+
+
 
 
 

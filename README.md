@@ -1,93 +1,64 @@
-# TFT
+# Phân tích dự án & Document về luồng WebSocket
 
+Dự án hiện tại là một ứng dụng Spring Boot phục vụ cho hệ thống CMS. 
 
+## 1. Hiện trạng dự án - Kiến trúc & Luồng xử lý
+- **Framework & Công nghệ**: Spring Boot, Spring Data JPA, Lombok, Websocket (STOMP). Cấu trúc dự án tuân theo mô hình Controller - Service - Repository.
+- **WebSocket Config**: Cấu hình tại `WebSocketConfig.java`, public endpoint ở `/ws`, sử dụng cấu hình STOMP với application prefix `/app` (thường dùng cho FE gọi lên) và broker prefix `/topic` (broadcast), `/queue` (point-to-point / user2user private message).
+- **Tính năng Notification (Hiện tại)**: Đang được xây dựng dưới dạng broadcast cho toàn bộ các thiết bị đang kết nối CMS. Tại `NotificationServiceImpl.java`, khi có thông báo mới, hệ thống sẽ lưu Data và gọi API qua `SimpMessagingTemplate.convertAndSend("/topic/cms-notifications", response)` để bắn tín hiệu tới tất cả client Frontend đang subscribe tới channel này. 
 
-## Getting started
+## 2. Luồng xử lý (Dự kiến) - Chat 1-1 giữa account CMS
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Dựa trên cấu hình Spring Websocket mặc định có sẵn và các Table dự kiến, mô hình hoạt động của ứng dụng Chat 1-1 sẽ diễn ra như sau:
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### Database Design (Dự kiến)
+**1. Bảng `conversations`**
+Chứa thông tin quản lý cơ bản một phiên chat.
+- `id`: Primary Key
+- `created_at`: Thời gian bắt đầu
+- `updated_at`: Cập nhật khi có tin nhắn mới
 
-## Add your files
+**2. Bảng `conversation_participants`**
+Quản lý user tham gia vào chat 1-1. Thực chất với chat 1-1 sẽ có 2 participants tương ứng 1 conversation_id.
+- `id`: Primary Key
+- `conversation_id`: Ngoại kiểm xuất phát từ bảng `conversations`
+- `user_id`: ID của User trong CMS
+- `joined_at`: Thời điểm join
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+**3. Bảng `messages`**
+Lưu trữ toàn bộ nội dung trong lịch sử tin nhắn.
+- `id`: Primary Key
+- `conversation_id`: Trỏ khóa về `conversations.id`
+- `sender_id`: Khóa ngoại về bảng `users.id` gốc (người gửi)
+- `content`: Nội dung chat
+- `is_read`: Boolean check tin nhắn đã xem chưa
+- `created_at`: Log thời gian bắn tin
 
-```
-cd existing_repo
-git remote add origin https://gitlab.com/Endclear/tft.git
-git branch -M main
-git push -uf origin main
-```
+### Luồng WebSocket STOMP (Flow Chat)
 
-## Integrate with your tools
+#### Bước 1: Khởi tạo kết nối & Subscribe (Client Side)
+- Sau khi khởi động FE CMS, **User A** và **User B** sẽ kết nối với Websocket ở đường dẫn `/ws`.
+- Mỗi Frontend phải tự động subscribe 2 địa chỉ chính:
+  1. `/topic/cms-notifications`: Dành cho Notification dùng chung.
+  2. `/user/queue/messages`: Dành cho tin nhắn cá nhân riêng tư. (User Destination Prefix của server đang để là `/user`).
 
-* [Set up project integrations](https://gitlab.com/Endclear/tft/-/settings/integrations)
+#### Bước 2: Trigger gửi tin nhắn (User A -> User B)
+- Khi **User A** ở Frontend chat riêng cho **User B**. Client A sẽ đóng gói payload (Sender, Receiver, Message, v.v...) dạng JSON và STOMP send thẳng lên WebSocket controller của Server với config:
+  - **Path**: `/app/chat.send`
 
-## Collaborate with your team
+#### Bước 3: Backend xử lý (`ChatController`)
+- Một class Spring Controller tại phía Backend (có gắn `@MessageMapping("/chat.send")`) bắt sự kiện truyền dữ liệu của **User A**.
+- **Xử lý DB Service**: 
+  - Validation check.
+  - Insert dòng Data mới tạo vào table `messages`.
+  - Cập nhật dòng `updated_at` trong bảng `conversations`.
+- **Đẩy dữ liệu Websocket lại**:
+  - Gọi method: `simpMessagingTemplate.convertAndSendToUser(userB_Identify, "/queue/messages", payload)`
+  - *Lưu ý thiết kế*: `userB_Identify` phải là thuộc tính định danh User (ví dụ như mã ID dạng string hay username string định ra ở Spring Security Principal) giúp hệ thống khoanh vùng được chính xác user. Broker tự sinh ra endpoint `/user/{userB_Identify}/queue/messages` dành riệng cho User B.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+#### Bước 4: Nhận tin nhắn (User B)
+- Nhờ cơ chế nhận dạng trong STOMP Spring, event này sẽ map chính xác session được khởi tạo bởi **User B**.
+- **User B** (đang Subscribe ở `/user/queue/messages`) nhận được Payload tin nhắn, thực hiện render UI append đoạn chat mới ra màn hình.
 
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to sets. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### Kết Luận
+Việc hệ thống tận dụng Spring Websocket theo hình mẫu này sẽ quản lý chặt chẽ được `Channel` cho Notification Broadcast và `User Private Channel` cho tính năng nhắn tin cá nhân. Thậm chí nếu có thiết kế Group Chat nâng cao thì vẫn có thể dùng thêm endpoint `/topic/...` linh hoạt mà không sợ nhiễu traffic.
