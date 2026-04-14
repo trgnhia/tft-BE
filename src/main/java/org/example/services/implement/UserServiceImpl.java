@@ -107,7 +107,7 @@ public class UserServiceImpl implements UserService {
         return UserInfoResponse.builder()
                 .userName(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole().getCode().toString())
+                .role(user.getRole().getCode())
                 .permissions(resolvePermissions(user.getRole().getPermissions()))
                 .build();
     }
@@ -120,7 +120,7 @@ public class UserServiceImpl implements UserService {
                 .deleted(user.isDeleted())
                 .createdDate(user.getCreatedAt())
                 .lastLogout(user.getLastLogoutAt())
-                .role(user.getRole().getCode().toString())
+                .role(user.getRole().getCode())
                 .roleDescription(user.getRole().getDescription())
                 .permissions(resolvePermissions(user.getRole().getPermissions()))
                 .build();
@@ -134,7 +134,7 @@ public class UserServiceImpl implements UserService {
 
     private PermissionDto toPermissionDto(Permission permission) {
         return PermissionDto.builder()
-                .permission(permission.getCode())
+                .code(permission.getCode())
                 .description(permission.getDescription())
                 .build();
     }
