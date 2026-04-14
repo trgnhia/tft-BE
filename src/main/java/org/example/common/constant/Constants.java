@@ -97,5 +97,14 @@ public final class Constants {
 
         public static final String DUPLICATE_USERNAME = "error.DUPLICATE_USERNAME";
         public static final String DUPLICATE_EMAIL = "error.DUPLICATE_EMAIL";
+
+
+        public static final String USER_IMPORT_USERNAME_REQUIRED = "{error.USER_IMPORT_USERNAME_REQUIRED}";
+        public static final String USER_IMPORT_USERNAME_SIZE = "{error.USER_IMPORT_USERNAME_SIZE}";
+        public static final String USER_IMPORT_EMAIL_REQUIRED = "{error.USER_IMPORT_EMAIL_REQUIRED}";
+        public static final String USER_IMPORT_EMAIL_INVALID = "{error.USER_IMPORT_EMAIL_INVALID}";
+        public static final String USER_IMPORT_PASSWORD_REQUIRED = "{error.USER_IMPORT_PASSWORD_REQUIRED}";
+        public static final String USER_IMPORT_ROLE_ID_REQUIRED = "{error.USER_IMPORT_ROLE_ID_REQUIRED}";
+        public static final String USER_IMPORT_ENABLED_REQUIRED = "{error.USER_IMPORT_ENABLED_REQUIRED}";
     }
 }
