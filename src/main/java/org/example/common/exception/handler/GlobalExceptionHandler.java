@@ -3,6 +3,7 @@ package org.example.common.exception.handler;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
@@ -11,6 +12,7 @@ import org.example.common.exception.ServerException;
 import org.example.common.exception.base.ParamError;
 import org.example.core.api.ApiResponse;
 import org.example.util.MessageUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -22,11 +24,14 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.List;
@@ -38,6 +43,11 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final String ERROR_LOG_PREFIX = "error.";
+    @Value("${spring.servlet.multipart.max-file-size:10MB}")
+    private DataSize maxFileSize;
+
+    @Value("${spring.servlet.multipart.max-request-size:10MB}")
+    private DataSize maxRequestSize;
 
     @ExceptionHandler(ServerException.class)
     @ResponseBody
@@ -141,6 +151,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ApiResponse.error(errors, ErrorCode.INVALID_PARAMETER.getCode()));
     }
 
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        log.warn("Multipart file exceeded configured max-file-size: {}", maxFileSize, ex);
+        String msg = MessageUtils.getMessage(
+                Constants.MessageKey.IMPORT_FILE_SIZE_EXCEEDED,
+                maxFileSize
+        );
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error(msg, ErrorCode.INVALID_PARAMETER.getCode()));
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMultipartException(MultipartException ex) {
+        log.warn("Multipart request error", ex);
+        boolean requestSizeExceeded = isLikelyRequestSizeExceeded(ex);
+        String messageKey = requestSizeExceeded
+                ? Constants.MessageKey.IMPORT_REQUEST_SIZE_EXCEEDED
+                : Constants.MessageKey.IMPORT_MULTIPART_INVALID;
+        Object argument = requestSizeExceeded ? maxRequestSize : "";
+        String msg = MessageUtils.getMessage(messageKey, argument);
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error(msg, ErrorCode.INVALID_PARAMETER.getCode()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnwantedException(Exception ex) {
         log.error("Error ", ex);
@@ -167,5 +201,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(msg, ErrorCode.NOT_FOUND.getCode()));
+    }
+
+    private boolean isLikelyRequestSizeExceeded(MultipartException ex) {
+        if (ex instanceof MaxUploadSizeExceededException) {
+            return true;
+        }
+        String msg = ex.getMessage();
+        return msg != null && msg.toLowerCase().contains("size");
     }
 }

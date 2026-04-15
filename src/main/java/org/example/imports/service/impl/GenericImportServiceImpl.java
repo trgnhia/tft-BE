@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.common.constant.Constants;
 import org.example.common.exception.ServerException;
 import org.example.annotations.ImportColumn;
 import org.example.imports.model.ImportExecutionResult;
@@ -29,6 +30,8 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.example.util.MessageUtils.getMessage;
 
 @Slf4j
 @Service
@@ -101,11 +104,11 @@ public class GenericImportServiceImpl implements GenericImportService {
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Import file is empty.");
+            throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_FILE_EMPTY));
         }
         if (file.getSize() > maxFileSize.toBytes()) {
             throw new IllegalArgumentException(
-                    "Import file exceeds the maximum allowed size of %s.".formatted(maxFileSize)
+                    getMessage(Constants.MessageKey.IMPORT_FILE_SIZE_EXCEEDED, maxFileSize)
             );
         }
     }
@@ -113,8 +116,7 @@ public class GenericImportServiceImpl implements GenericImportService {
     private void ensureRowLimit(int rowSize) {
         if (rowSize > MAX_ROWS) {
             throw new IllegalArgumentException(
-                    "File exceeds the maximum allowed row limit of %d. Please split the file and try again."
-                            .formatted(MAX_ROWS)
+                    getMessage(Constants.MessageKey.IMPORT_ROW_LIMIT_EXCEEDED, MAX_ROWS)
             );
         }
     }
@@ -170,14 +172,16 @@ public class GenericImportServiceImpl implements GenericImportService {
         return fileStrategies.stream()
                 .filter(s -> s.supports(extension))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported file type: " + extension));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        getMessage(Constants.MessageKey.IMPORT_UNSUPPORTED_FILE_TYPE, extension))
+                );
     }
 
     private ParsedImportFile readFile(MultipartFile file, ImportFileStrategy strategy) {
         try {
             return strategy.parse(file.getInputStream());
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Unable to read import file.", ex);
+            throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_READ_FILE_FAILED), ex);
         }
     }
 
@@ -189,7 +193,7 @@ public class GenericImportServiceImpl implements GenericImportService {
         try {
             return strategy.buildErrorFile(parsedFile, errorsByRow);
         } catch (IOException ex) {
-            throw new IllegalStateException("Unable to generate error report file.", ex);
+            throw new IllegalStateException(getMessage(Constants.MessageKey.IMPORT_BUILD_ERROR_FILE_FAILED), ex);
         }
     }
 
@@ -224,12 +228,12 @@ public class GenericImportServiceImpl implements GenericImportService {
 
         if (!missingColumns.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Missing required column(s) in file: " + String.join(", ", missingColumns)
+                    getMessage(Constants.MessageKey.IMPORT_MISSING_COLUMNS, String.join(", ", missingColumns))
             );
         }
         if (fieldBindings.isEmpty()) {
             throw new IllegalArgumentException(
-                    "No @ImportColumn fields found in DTO: " + dtoClass.getName()
+                    getMessage(Constants.MessageKey.IMPORT_NO_COLUMNS_ANNOTATED, dtoClass.getName())
             );
         }
 
@@ -267,7 +271,7 @@ public class GenericImportServiceImpl implements GenericImportService {
 
         if (isBlank(raw)) {
             if (binding.required()) {
-                errors.add(binding.columnName() + " is required");
+                errors.add(getMessage(Constants.MessageKey.IMPORT_COLUMN_REQUIRED, binding.columnName()));
             }
             return;
         }
@@ -277,7 +281,7 @@ public class GenericImportServiceImpl implements GenericImportService {
             Object converted = convertValue(normalizedRaw, binding.fieldType());
             beanWrapper.setPropertyValue(binding.fieldName(), converted);
         } catch (RuntimeException ex) {
-            errors.add(binding.columnName() + " has invalid value '" + normalizedRaw + "'");
+            errors.add(getMessage(Constants.MessageKey.IMPORT_COLUMN_INVALID_VALUE, binding.columnName(), normalizedRaw));
         }
     }
 
@@ -287,7 +291,7 @@ public class GenericImportServiceImpl implements GenericImportService {
         } catch (InstantiationException | IllegalAccessException
                  | InvocationTargetException | NoSuchMethodException ex) {
             throw new IllegalArgumentException(
-                    "DTO class must have a public no-args constructor: " + dtoClass.getName(), ex
+                    getMessage(Constants.MessageKey.IMPORT_DTO_NO_NOARGS, dtoClass.getName()), ex
             );
         }
     }
@@ -309,10 +313,10 @@ public class GenericImportServiceImpl implements GenericImportService {
                 return parseEnum(value, targetType);
             }
         } catch (DateTimeParseException | NumberFormatException ex) {
-            throw new IllegalArgumentException("Invalid format for value: " + value, ex);
+            throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_INVALID_VALUE_FORMAT, value), ex);
         }
 
-        throw new IllegalArgumentException("Unsupported field type for import: " + targetType.getName());
+        throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_UNSUPPORTED_FIELD_TYPE, targetType.getName()));
     }
 
     private Object parseEnum(String value, Class<?> enumType) {
@@ -324,18 +328,14 @@ public class GenericImportServiceImpl implements GenericImportService {
         String accepted = Arrays.stream(enumType.getEnumConstants())
                 .map(c -> ((Enum<?>) c).name())
                 .collect(Collectors.joining(", "));
-        throw new IllegalArgumentException(
-                "Invalid value '" + value + "'. Accepted values: " + accepted
-        );
+        throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_INVALID_ENUM_VALUE, value, accepted));
     }
 
     private static Boolean parseBoolean(String rawValue) {
         return switch (rawValue.trim().toLowerCase(Locale.ROOT)) {
             case "true" -> true;
             case "false" -> false;
-            default -> throw new IllegalArgumentException(
-                    "Invalid boolean value: '" + rawValue + "'. Accepted values: true, false"
-            );
+            default -> throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_INVALID_BOOLEAN_VALUE, rawValue));
         };
     }
 
@@ -343,7 +343,7 @@ public class GenericImportServiceImpl implements GenericImportService {
 
     private String extractExtension(String fileName) {
         if (fileName == null || !fileName.contains(".")) {
-            throw new IllegalArgumentException("Cannot determine file extension.");
+            throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_FILE_EXTENSION_MISSING));
         }
         return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
     }
@@ -390,7 +390,7 @@ public class GenericImportServiceImpl implements GenericImportService {
         }
 
         if (messages.isEmpty()) {
-            messages.add("An error occurred while saving this record.");
+            messages.add(getMessage(Constants.MessageKey.IMPORT_PERSIST_GENERIC_ERROR));
         }
         return new ArrayList<>(messages);
     }
