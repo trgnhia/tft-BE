@@ -14,7 +14,9 @@ import org.example.imports.service.ImportRowPersister;
 import org.example.imports.strategy.ImportFileStrategy;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -51,6 +53,8 @@ public class GenericImportServiceImpl implements GenericImportService {
 
     private final List<ImportFileStrategy> fileStrategies;
     private final Validator validator;
+    @Value("${spring.servlet.multipart.max-file-size:10MB}")
+    private DataSize maxFileSize;
 
     @Override
     public <T> ImportExecutionResult importFile(
@@ -98,6 +102,11 @@ public class GenericImportServiceImpl implements GenericImportService {
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Import file is empty.");
+        }
+        if (file.getSize() > maxFileSize.toBytes()) {
+            throw new IllegalArgumentException(
+                    "Import file exceeds the maximum allowed size of %s.".formatted(maxFileSize)
+            );
         }
     }
 
