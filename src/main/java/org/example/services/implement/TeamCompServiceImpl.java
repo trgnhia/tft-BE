@@ -168,4 +168,21 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
     }
+
+    @Override
+    @Transactional
+    public void deleteMany(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(ids);
+        if (teamComps.size() != ids.size()) {
+            throw new ResourceNotFoundException(
+                    MessageUtils.getMessage(Constants.MessageKey.ERROR_NOT_FOUND)
+            );
+        }
+        teamComps.forEach(teamComp -> teamComp.setDeleted(true));
+
+        teamCompRepository.saveAll(teamComps);
+    }
 }
