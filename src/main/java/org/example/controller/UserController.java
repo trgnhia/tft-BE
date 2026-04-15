@@ -33,7 +33,6 @@ import static org.example.util.MessageUtils.getMessage;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/users")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR','USER')")
 public class UserController {
     private final UserService userService;
     private final GenericImportService genericImportService;
