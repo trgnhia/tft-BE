@@ -28,7 +28,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/users")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR','USER')")
 public class UserController {
     private final UserService userService;
     private final GenericImportService genericImportService;
