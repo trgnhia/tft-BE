@@ -24,12 +24,15 @@ public class SetsCmsController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<SetsResponse>>> getAllSet(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Boolean deleted
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(setsService.getAllSet(page, size))
+                ApiResponse.success(setsService.getAllSet(page, size, deleted))
         );
     }
+
+
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<SetsResponse>> getById(@PathVariable Long id) {
