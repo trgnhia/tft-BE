@@ -2,6 +2,7 @@ package org.example.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.common.constant.Constants;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.user.*;
@@ -24,6 +25,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+import static org.example.util.MessageUtils.getMessage;
 
 @RestController
 @RequiredArgsConstructor
@@ -94,7 +99,11 @@ public class UserController {
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> importUsers(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> importUsers(@RequestParam("file") List<MultipartFile> files) {
+        if (files == null || files.size() != 1) {
+            throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_SINGLE_FILE_REQUIRED));
+        }
+        MultipartFile file = files.get(0);
         ImportExecutionResult result = genericImportService.importFile(
                 file,
                 UserImportDto.class,
