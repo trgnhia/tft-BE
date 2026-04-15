@@ -21,4 +21,6 @@ public interface UserService {
     UserDetailedResponse deleteUserById(Long userId);
 
     UserDetailedResponse updateStatus(Long userId, UpdateAccountStatusRequest request);
+
+    UserInfoResponse getMyInfo(Long userId);
 }

@@ -49,18 +49,19 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     @Query("""
                 select i from Item i
                 where i.deleted = false
-                  and (:keyword is null or lower(i.name) like lower(concat('%', :keyword, '%')))
+                  and (:keyword = '' or lower(i.name) like lower(concat('%', :keyword, '%')))
                   and (:setId is null or i.sets.id = :setId)
             """)
     Page<Item> searchItemsForCms(@Param("keyword") String keyword,
                                  @Param("setId") Long setId,
                                  Pageable pageable);
 
+
     @Query("""
                 select i from Item i
                 where i.deleted = false
                   and i.sets.deleted = false
-                  and (:keyword is null or lower(i.name) like lower(concat('%', :keyword, '%')))
+                  and (:keyword = '' or lower(i.name) like lower(concat('%', :keyword, '%')))
                   and (:setId is null or i.sets.id = :setId)
             """)
     Page<Item> searchItemsForPublic(@Param("keyword") String keyword,

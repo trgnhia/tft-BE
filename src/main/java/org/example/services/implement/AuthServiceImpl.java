@@ -3,7 +3,6 @@ package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.enums.ErrorCode;
-import org.example.common.enums.RoleCode;
 import org.example.common.exception.ServerException;
 import org.example.dto.auth.AuthToken;
 import org.example.dto.auth.LoginRequest;
@@ -76,7 +75,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private @NonNull User buildUser(SignUpRequest request) {
-        Role defaultRole = roleRepository.findByCode(RoleCode.USER)
+        Role defaultRole = roleRepository.findByCode("USER")
                 .orElseThrow(() -> new ServerException(ErrorCode.SERVICE_UNAVAILABLE));
         User user = new User();
         user.setUsername(request.userName());
