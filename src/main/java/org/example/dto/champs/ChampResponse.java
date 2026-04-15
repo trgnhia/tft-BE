@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @Builder
@@ -21,6 +22,7 @@ public class ChampResponse {
     private String slug;
     private String name;
     private String imageUrl;
+    private List<ChampTraitResponse> traits;
     private ChampStatsResponse stats;
     private Boolean deleted;
     private Instant createdAt;

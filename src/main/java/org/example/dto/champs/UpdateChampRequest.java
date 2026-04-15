@@ -11,11 +11,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.common.constant.Constants;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateChampRequest {
+    private Long setId;
+
     @Size(max = 100, message = "{" + Constants.MessageKey.CHAMP_SLUG_SIZE + "}")
     @Pattern(regexp = "^[a-z0-9-]+$", message = "{" + Constants.MessageKey.CHAMP_SLUG_PATTERN + "}")
     private String slug;
@@ -32,4 +36,6 @@ public class UpdateChampRequest {
 
     @Valid
     private ChampStatsRequest stats;
+
+    private List<Long> traitIds;
 }
