@@ -5,16 +5,25 @@ import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.user.*;
+import org.example.imports.model.ImportExecutionResult;
+import org.example.imports.service.GenericImportService;
+import org.example.services.UserImportPersistenceService;
 import org.example.security.SecurityUser;
 import org.example.services.UserService;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +31,8 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasAnyRole('ADMIN','EDITOR','USER')")
 public class UserController {
     private final UserService userService;
+    private final GenericImportService genericImportService;
+    private final UserImportPersistenceService userImportPersistenceService;
 
 
     @GetMapping("/my-info")
@@ -79,6 +90,30 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserDetailedResponse>> updateStatus(@PathVariable Long userId, @RequestBody @Valid UpdateAccountStatusRequest request) {
         var result = userService.updateStatus(userId, request);
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> importUsers(@RequestParam("file") MultipartFile file) {
+        ImportExecutionResult result = genericImportService.importFile(
+                file,
+                UserImportDto.class,
+                userImportPersistenceService::persist
+        );
+
+        if (!result.hasFailures()) {
+            return ResponseEntity.ok(ApiResponse.success(result.message()));
+        }
+
+        ByteArrayResource resource = new ByteArrayResource(result.errorFileContent());
+        HttpStatus status = result.successCount() > 0 ? HttpStatus.MULTI_STATUS : HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + result.errorFileName() + "\"")
+                .header("X-Import-Message", result.message())
+                .contentType(MediaType.parseMediaType(result.errorFileContentType()))
+                .contentLength(result.errorFileContent().length)
+                .body(resource);
     }
 
 }
