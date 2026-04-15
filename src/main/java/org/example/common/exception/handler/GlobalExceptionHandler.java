@@ -151,25 +151,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ApiResponse.error(errors, ErrorCode.INVALID_PARAMETER.getCode()));
     }
 
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
-        log.warn("Multipart file exceeded configured max-file-size: {}", maxFileSize, ex);
-        String msg = MessageUtils.getMessage(
-                Constants.MessageKey.IMPORT_FILE_SIZE_EXCEEDED,
-                maxFileSize
-        );
-        return ResponseEntity.badRequest()
-                .body(ApiResponse.error(msg, ErrorCode.INVALID_PARAMETER.getCode()));
-    }
-
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<ApiResponse<Void>> handleMultipartException(MultipartException ex) {
         log.warn("Multipart request error", ex);
-        boolean requestSizeExceeded = isLikelyRequestSizeExceeded(ex);
-        String messageKey = requestSizeExceeded
-                ? Constants.MessageKey.IMPORT_REQUEST_SIZE_EXCEEDED
-                : Constants.MessageKey.IMPORT_MULTIPART_INVALID;
-        Object argument = requestSizeExceeded ? maxRequestSize : "";
+        boolean fileSizeExceeded = ex instanceof MaxUploadSizeExceededException;
+        boolean requestSizeExceeded = !fileSizeExceeded && isLikelyRequestSizeExceeded(ex);
+        String messageKey;
+        Object argument;
+        if (fileSizeExceeded) {
+            messageKey = Constants.MessageKey.IMPORT_FILE_SIZE_EXCEEDED;
+            argument = maxFileSize;
+        } else if (requestSizeExceeded) {
+            messageKey = Constants.MessageKey.IMPORT_REQUEST_SIZE_EXCEEDED;
+            argument = maxRequestSize;
+        } else {
+            messageKey = Constants.MessageKey.IMPORT_MULTIPART_INVALID;
+            argument = "";
+        }
         String msg = MessageUtils.getMessage(messageKey, argument);
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error(msg, ErrorCode.INVALID_PARAMETER.getCode()));
