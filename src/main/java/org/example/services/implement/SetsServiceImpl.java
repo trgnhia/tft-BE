@@ -3,6 +3,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
+import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
 import org.example.dto.sets.SetsRequest;
@@ -97,6 +98,22 @@ public class SetsServiceImpl implements SetsService {
         }
         sets.setDeleted(true);
         setRepo.save(sets);
+    }
+
+    @Override
+    @Transactional
+    public void deletedMany(List<Long> ids) {
+        List<Sets> setsList = setRepo.findAllByIdInAndDeletedFalse(ids);
+
+        if (setsList.size() != ids.size()) {
+            throw new DataException(
+                    ErrorCode.INCOMPLETE_DATA,
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)
+            );
+        }
+
+        setsList.forEach(s -> s.setDeleted(true));
+        setRepo.saveAll(setsList);
     }
 
     private Sets getById(Long id) {

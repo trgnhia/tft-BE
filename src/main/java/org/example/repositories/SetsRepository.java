@@ -18,4 +18,6 @@ public interface SetsRepository extends JpaRepository<Sets, Long> {
     where (:deleted is null or s.deleted = :deleted)
 """)
     Page<Sets> searchSetsForCms(@Param("deleted") Boolean deleted, Pageable pageable);
+
+    List<Sets> findAllByIdInAndDeletedFalse(List<Long> ids);
 }
