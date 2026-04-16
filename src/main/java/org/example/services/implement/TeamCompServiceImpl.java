@@ -21,10 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -185,4 +182,41 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         teamCompRepository.saveAll(teamComps);
     }
+
+
+    @Override
+    public Page<TeamCompResponse> filterTeamCompsCms(
+            Long setId,
+            String keyword,
+            List<String> styles,
+            Long championId,
+            Boolean deleted,
+            Boolean setDeleted,
+            Pageable pageable
+    ) {
+        Page<Long> ids = teamCompRepository.filterTeamCompIdsCms(
+                setId, keyword, styles, championId, deleted, setDeleted, pageable
+        );
+
+        if (ids.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Long> orderedIds = ids.getContent();
+
+        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(orderedIds);
+
+
+        Map<Long, TeamComp> map = teamComps.stream()
+                .collect(Collectors.toMap(TeamComp::getId, t -> t));
+
+        List<TeamCompResponse> responses = orderedIds.stream()
+                .map(map::get)
+                .filter(Objects::nonNull)
+                .map(teamCompMapper::toResponse)
+                .toList();
+        return new PageImpl<>(responses, pageable, ids.getTotalElements());
+    }
+
+
 }
