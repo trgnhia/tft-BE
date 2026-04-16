@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -126,7 +125,7 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    private List<PermissionDto> resolvePermissions(Set<Permission> permissions) {
+    private List<PermissionDto> resolvePermissions(List<Permission> permissions) {
         return permissions.stream()
                 .map(this::toPermissionDto)
                 .toList();

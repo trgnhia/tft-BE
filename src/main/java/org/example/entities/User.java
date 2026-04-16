@@ -28,7 +28,7 @@ public class User extends BaseEntity {
     private boolean deleted;
     @Column(name = "last_logout_at")
     private Instant lastLogoutAt;
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     private Role role;
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
