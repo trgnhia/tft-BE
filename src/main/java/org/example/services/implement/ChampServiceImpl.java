@@ -11,11 +11,15 @@ import org.example.core.api.PageResponse;
 import org.example.dto.champs.*;
 import org.example.entities.Sets;
 import org.example.entities.champ.Champ;
+import org.example.entities.champ.ChampTrait;
+import org.example.entities.trait.Trait;
 import org.example.mapper.ChampsMapper;
 import org.example.repositories.ChampItemRecommendRepository;
 import org.example.repositories.ChampRepository;
+import org.example.repositories.ChampTraitRepository;
 import org.example.repositories.spec.ChampSpecification;
 import org.example.repositories.SetsRepository;
+import org.example.repositories.TraitRepository;
 import org.example.services.BaseService;
 import org.example.services.ChampService;
 import org.example.util.FilterUtil;
@@ -25,8 +29,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +46,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     private final SetsRepository setsRepository;
     private final ChampsMapper champMapper;
     private final ChampItemRecommendRepository champItemRecommendRepo;
+    private final ChampTraitRepository champTraitRepository;
+    private final TraitRepository traitRepository;
     private final FilterUtil filterUtil;
 
     @Override
@@ -137,7 +147,14 @@ public class ChampServiceImpl extends BaseService implements ChampService {
             throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
         }
 
+        Long targetSetId = resolveTargetSetId(request, champ);
+        if (!Objects.equals(targetSetId, champ.getSets().getId())) {
+            Sets targetSet = getOrThrowSet(targetSetId);
+            champ.setSets(targetSet);
+        }
+
         champMapper.updateEntity(request, champ);
+        syncChampTraits(champ, targetSetId, request.getTraitIds());
 
         log.info("[CHAMP] Updated successfully id={} by user={}", id, getCurrentUserNameOrThrow());
         return champMapper.toResponse(champ);
@@ -275,6 +292,81 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                 .countBySet(bySet)
                 .countByCost(byCost)
                 .build();
+    }
+
+    private Long resolveTargetSetId(UpdateChampRequest request, Champ champ) {
+        return request.getSetId() != null ? request.getSetId() : champ.getSets().getId();
+    }
+
+    private Sets getOrThrowSet(Long setId) {
+        return setsRepository.findById(setId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_SETS, String.valueOf(setId)}
+                ));
+    }
+
+    private void syncChampTraits(Champ champ, Long targetSetId, List<Long> traitIds) {
+        if (traitIds == null) {
+            return;
+        }
+
+        List<Long> normalizedIds = traitIds.stream()
+                .filter(Objects::nonNull)
+                .toList();
+        ensureNoDuplicateTraitIds(normalizedIds);
+
+        if (normalizedIds.isEmpty()) {
+            champTraitRepository.deleteByChamp_Id(champ.getId());
+            champ.setChampTraits(new ArrayList<>());
+            return;
+        }
+
+        List<Trait> traits = traitRepository.findAllById(normalizedIds);
+        ensureAllTraitsExist(normalizedIds, traits);
+        ensureTraitsBelongToSet(targetSetId, traits);
+
+        champTraitRepository.deleteByChamp_Id(champ.getId());
+        List<ChampTrait> newChampTraits = traits.stream()
+                .map(trait -> ChampTrait.builder().champ(champ).trait(trait).build())
+                .toList();
+        champTraitRepository.saveAll(newChampTraits);
+        champ.setChampTraits(new ArrayList<>(newChampTraits));
+    }
+
+    private void ensureNoDuplicateTraitIds(List<Long> traitIds) {
+        Set<Long> uniqueTraitIds = new HashSet<>(traitIds);
+        if (uniqueTraitIds.size() != traitIds.size()) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{"Duplicate traitId in request"});
+        }
+    }
+
+    private void ensureAllTraitsExist(List<Long> requestedTraitIds, List<Trait> traits) {
+        Set<Long> foundIds = traits.stream()
+                .map(Trait::getId)
+                .collect(Collectors.toSet());
+        List<Long> missingIds = requestedTraitIds.stream()
+                .filter(id -> !foundIds.contains(id))
+                .toList();
+        if (!missingIds.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    Constants.MessageKey.ERROR_NOT_FOUND,
+                    new Object[]{Constants.MessageKey.ENTITY_TRAIT, missingIds.toString()}
+            );
+        }
+    }
+
+    private void ensureTraitsBelongToSet(Long setId, List<Trait> traits) {
+        List<Long> mismatchedTraitIds = traits.stream()
+                .filter(trait -> !Objects.equals(trait.getSets().getId(), setId))
+                .map(Trait::getId)
+                .toList();
+        if (!mismatchedTraitIds.isEmpty()) {
+            throw new DataException(
+                    ErrorCode.INVALID_PARAMETER,
+                    new Object[]{"traitIds " + mismatchedTraitIds + " do not belong to setId " + setId}
+            );
+        }
     }
 
 }

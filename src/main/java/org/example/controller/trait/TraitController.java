@@ -16,7 +16,7 @@ import java.util.List;
 @RequestMapping("/traits")
 @RequiredArgsConstructor
 @Slf4j
-public class TraitController {
+public class    TraitController {
 
     private final TraitServiceImpl traitService;
 
