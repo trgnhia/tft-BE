@@ -18,4 +18,5 @@ public class SetsRequest {
     @NotBlank(message = "{sets.description.not_blank}")
     @Size(max = 100, message = "{sets.description.size}")
     private String description;
+    private boolean deleted;
 }
