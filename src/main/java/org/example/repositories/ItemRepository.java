@@ -38,14 +38,6 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     List<Item> findAllWithSets();
 
 
-    @Modifying
-    @Query("""
-                update Item i
-                set i.deleted = true
-                where i.sets.id = :setId
-            """)
-    void softDeleteBySetId(@Param("setId") Long setId);
-
     @Query("""
                 select i from Item i
                 where i.deleted = false

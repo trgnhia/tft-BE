@@ -24,4 +24,7 @@ public class ItemRequest {
     private String imageUrl;
     private ItemStats stats;
     private ItemEffects effects;
+    @NotBlank(message = "{tier.name.not_blank}")
+    @Size(max = 10, message = "{tier.name.size}")
+    private String tier;
 }

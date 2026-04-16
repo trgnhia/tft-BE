@@ -1,10 +1,8 @@
 package org.example.controller.item;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
-import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 import org.example.services.ItemService;
 import org.springframework.http.ResponseEntity;

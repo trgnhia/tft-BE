@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/cms/items")
 @RequiredArgsConstructor
@@ -20,13 +18,6 @@ import java.util.List;
 public class ItemCmsController {
 
     private final ItemService itemService;
-
-//    @GetMapping
-//    public ResponseEntity<ApiResponse<List<ItemResponse>>> getAll() {
-//        return ResponseEntity.ok(
-//                ApiResponse.success(itemService.getAllItem())
-//        );
-//    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(

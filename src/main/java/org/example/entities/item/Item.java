@@ -27,5 +27,7 @@ public class Item extends AuditableEntity {
     private ItemEffects effects;
     @Column(name = "description", columnDefinition = "text")
     private String description;
+    @Column(name = "tier", nullable = false)
+    private String tier;
 
 }
