@@ -15,4 +15,7 @@ public class SetsRequest {
     @NotBlank(message = "{sets.name.not_blank}")
     @Size(max = 100, message = "{sets.name.size}")
     private String name;
+    @NotBlank(message = "{sets.description.not_blank}")
+    @Size(max = 100, message = "{sets.description.size}")
+    private String description;
 }

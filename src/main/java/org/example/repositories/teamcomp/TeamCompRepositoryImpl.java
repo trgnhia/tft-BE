@@ -45,8 +45,12 @@ public class TeamCompRepositoryImpl implements TeamCompRepositoryCustom {
         }
 
         if (styles != null && !styles.isEmpty()) {
-            whereClause.append(" AND tc.style IN (:styles) ");
-            params.addValue("styles", styles);
+            whereClause.append(" AND UPPER(tc.style) IN (:styles) ");
+            params.addValue("styles",
+                    styles.stream()
+                            .map(String::toUpperCase)
+                            .toList()
+            );
         }
 
         if (championId != null) {

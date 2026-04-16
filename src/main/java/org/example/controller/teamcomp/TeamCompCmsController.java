@@ -57,4 +57,11 @@ public class TeamCompCmsController {
         teamCompService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    @DeleteMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    public ResponseEntity<ApiResponse<Void>> deleteMany(@RequestBody List<Long> ids) {
+        teamCompService.deleteMany(ids);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }

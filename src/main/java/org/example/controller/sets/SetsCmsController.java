@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
+import org.example.dto.champs.BulkDeleteRequest;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.services.SetsService;
@@ -24,12 +25,15 @@ public class SetsCmsController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<SetsResponse>>> getAllSet(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(required = false) Boolean deleted
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(setsService.getAllSet(page, size))
+                ApiResponse.success(setsService.getAllSet(page, size, keyword, deleted))
         );
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<SetsResponse>> getById(@PathVariable Long id) {
@@ -57,6 +61,12 @@ public class SetsCmsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         setsService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteMany(@Valid @RequestBody BulkDeleteRequest request) {
+        setsService.deletedMany(request.getIds());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
