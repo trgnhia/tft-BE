@@ -8,9 +8,10 @@ import java.util.List;
 
 public interface SetsService {
     SetsResponse getSetById (Long id);
-    PageResponse<SetsResponse> getAllSet(int page, int size);
+    PageResponse<SetsResponse> getAllSet(int page, int size, String keyword, Boolean deleted);
     List<SetsResponse> getAllPublishedSet();
     SetsResponse create (SetsRequest request);
     SetsResponse update (Long id, SetsRequest request);
     void delete (Long id);
+    void deletedMany (List<Long> ids);
 }
