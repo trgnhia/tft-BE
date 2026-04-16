@@ -79,7 +79,7 @@ public class TeamCompServiceImpl implements TeamCompService {
 
     @Override
     public TeamCompResponse getById(Long id) {
-        TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
+        TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
@@ -89,11 +89,11 @@ public class TeamCompServiceImpl implements TeamCompService {
     @Override
     @Transactional
     public TeamCompResponse update(Long id, TeamCompRequest request) {
-        TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
+        TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
         if (!teamComp.getName().equals(request.getName()) &&
-                teamCompRepository.existsByNameAndDeletedFalse(request.getName())) {
+                teamCompRepository.existsByNameAndIdNotAndDeletedFalse(request.getName(), id)) {
             throw new ConflictException(
                     MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                     request.getName()
@@ -101,6 +101,7 @@ public class TeamCompServiceImpl implements TeamCompService {
         }
 
         teamCompMapper.updateEntity(request, teamComp);
+
 
         if (request.getChampionIds() != null) {
             Set<Long> uniqueChampIds = new HashSet<>(request.getChampionIds());
