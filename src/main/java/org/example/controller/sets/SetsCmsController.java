@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
+import org.example.dto.champs.BulkDeleteRequest;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.services.SetsService;
@@ -60,6 +61,12 @@ public class SetsCmsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         setsService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteMany(@Valid @RequestBody BulkDeleteRequest request) {
+        setsService.deletedMany(request.getIds());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
