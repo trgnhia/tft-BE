@@ -26,13 +26,13 @@ public class SetsCmsController {
     public ResponseEntity<ApiResponse<PageResponse<SetsResponse>>> getAllSet(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(required = false) Boolean deleted
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(setsService.getAllSet(page, size, deleted))
+                ApiResponse.success(setsService.getAllSet(page, size, keyword, deleted))
         );
     }
-
 
 
     @GetMapping("/{id}")

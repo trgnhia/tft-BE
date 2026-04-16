@@ -45,14 +45,16 @@ public class SetsServiceImpl implements SetsService {
     }
 
     @Override
-    public PageResponse<SetsResponse> getAllSet(int page, int size, Boolean deleted) {
+    public PageResponse<SetsResponse> getAllSet(int page, int size, String keyword, Boolean deleted) {
         Pageable pageable = PageRequest.of(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Sets> setsPage = setRepo.searchSetsForCms(deleted, pageable);
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+
+        Page<Sets> setsPage = setRepo.searchSetsForCms(normalizedKeyword, deleted, pageable);
         Page<SetsResponse> responsePage = setsPage.map(setsMapper::toSetsResponse);
 
         return PageResponse.from(responsePage);

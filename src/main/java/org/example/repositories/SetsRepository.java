@@ -16,8 +16,15 @@ public interface SetsRepository extends JpaRepository<Sets, Long> {
     @Query("""
     select s from Sets s
     where (:deleted is null or s.deleted = :deleted)
+      and (
+            :keyword = '' 
+            or lower(s.name) like lower(concat('%', :keyword, '%'))
+            or lower(coalesce(s.description, '')) like lower(concat('%', :keyword, '%'))
+      )
 """)
-    Page<Sets> searchSetsForCms(@Param("deleted") Boolean deleted, Pageable pageable);
+    Page<Sets> searchSetsForCms(@Param("keyword") String keyword,
+                                @Param("deleted") Boolean deleted,
+                                Pageable pageable);
 
     List<Sets> findAllByIdInAndDeletedFalse(List<Long> ids);
 }
