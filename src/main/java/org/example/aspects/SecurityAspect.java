@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SecurityAspect {
     @Pointcut("execution(* org.example.controller..*(..))")
-    public void controllerLayer() {
+    private void controllerLayer() {
     }
 
     @Before("controllerLayer() && @annotation(requirePermission)")
