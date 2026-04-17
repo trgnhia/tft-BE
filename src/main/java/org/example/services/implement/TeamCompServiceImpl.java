@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.constant.Constants;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
+import org.example.dto.teamcomp.TeamCompFilter;
 import org.example.dto.teamcomp.TeamCompRequest;
 import org.example.dto.teamcomp.TeamCompResponse;
 import org.example.entities.champ.Champ;
@@ -82,7 +83,7 @@ public class TeamCompServiceImpl implements TeamCompService {
         TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
-                        "id " + String.valueOf(id)));
+                        "id " ,String.valueOf(id)));
         return teamCompMapper.toResponse(teamComp);
     }
 
@@ -91,7 +92,7 @@ public class TeamCompServiceImpl implements TeamCompService {
     public TeamCompResponse update(Long id, TeamCompRequest request) {
         TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
-                        "id " + String.valueOf(id)));
+                        "id " ,String.valueOf(id)));
         if (!teamComp.getName().equals(request.getName()) &&
                 teamCompRepository.existsByNameAndIdNotAndDeletedFalse(request.getName(), id)) {
             throw new ConflictException(
@@ -145,28 +146,11 @@ public class TeamCompServiceImpl implements TeamCompService {
     public void delete(Long id) {
         TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
-                        "id " + String.valueOf(id)));
+                        "id " ,String.valueOf(id)));
 
         teamComp.setDeleted(true);
         teamCompRepository.save(teamComp);
     }
-
-    @Override
-    public Page<TeamCompResponse> filterTeamComps(Long setId, String keyword, List<String> styles, Long championId, Pageable pageable) {
-        Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(setId, keyword, styles, championId, pageable);
-
-        if (pagedIds.isEmpty()) {
-            return Page.empty(pageable);
-        }
-        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(pagedIds.getContent());
-
-        List<TeamCompResponse> responses = teamComps.stream()
-                .map(teamCompMapper::toResponse)
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
-    }
-
     @Override
     @Transactional
     public void deleteMany(List<Long> ids) {
@@ -183,41 +167,99 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         teamCompRepository.saveAll(teamComps);
     }
+    @Override
+    public Page<TeamCompResponse> filterTeamComps(TeamCompFilter filter, Pageable pageable) {
+        // Gọi thẳng filter xuống repo (Repo đã tự set deleted = false cho luồng này)
+        Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(filter, pageable);
 
+        // Dùng hàm chung để map và giữ nguyên thứ tự sắp xếp (Sorting)
+        return mapToPageResponsePreserveOrder(pagedIds, pageable);
+    }
 
     @Override
-    public Page<TeamCompResponse> filterTeamCompsCms(
-            Long setId,
-            String keyword,
-            List<String> styles,
-            Long championId,
-            Boolean deleted,
-            Boolean setDeleted,
-            Pageable pageable
-    ) {
-        Page<Long> ids = teamCompRepository.filterTeamCompIdsCms(
-                setId, keyword, styles, championId, deleted, setDeleted, pageable
-        );
+    public Page<TeamCompResponse> filterTeamCompsCms(TeamCompFilter filter, Pageable pageable) {
+        Page<Long> pagedIds = teamCompRepository.filterTeamCompIdsCms(filter, pageable);
 
-        if (ids.isEmpty()) {
+        // Dùng chung hàm map
+        return mapToPageResponsePreserveOrder(pagedIds, pageable);
+    }
+
+    private Page<TeamCompResponse> mapToPageResponsePreserveOrder(Page<Long> pagedIds, Pageable pageable) {
+        if (pagedIds.isEmpty()) {
             return Page.empty(pageable);
         }
 
-        List<Long> orderedIds = ids.getContent();
+        List<Long> orderedIds = pagedIds.getContent();
 
+        // Lấy danh sách Entities (hàm IN không đảm bảo thứ tự)
         List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(orderedIds);
 
-
+        // Đưa vào Map để lookup
         Map<Long, TeamComp> map = teamComps.stream()
                 .collect(Collectors.toMap(TeamComp::getId, t -> t));
 
+        // Duyệt lại theo đúng danh sách ID đã được Sort từ DB để trả về kết quả
         List<TeamCompResponse> responses = orderedIds.stream()
                 .map(map::get)
                 .filter(Objects::nonNull)
                 .map(teamCompMapper::toResponse)
                 .toList();
-        return new PageImpl<>(responses, pageable, ids.getTotalElements());
+
+        return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
     }
+
+//    @Override
+//    public Page<TeamCompResponse> filterTeamComps(Long setId, String keyword, List<String> styles, Long championId, Pageable pageable) {
+//        Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(setId, keyword, styles, championId, pageable);
+//
+//        if (pagedIds.isEmpty()) {
+//            return Page.empty(pageable);
+//        }
+//        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(pagedIds.getContent());
+//
+//        List<TeamCompResponse> responses = teamComps.stream()
+//                .map(teamCompMapper::toResponse)
+//                .collect(Collectors.toList());
+//
+//        return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
+//    }
+//
+//
+//
+//    @Override
+//    public Page<TeamCompResponse> filterTeamCompsCms(
+//            Long setId,
+//            String keyword,
+//            List<String> styles,
+//            List<String> tiers,
+//            Long championId,
+//            Boolean deleted,
+//            Boolean setDeleted,
+//            Pageable pageable
+//    ) {
+//        Page<Long> ids = teamCompRepository.filterTeamCompIdsCms(
+//                setId, keyword, styles, tiers, championId, deleted, setDeleted, pageable
+//        );
+//
+//        if (ids.isEmpty()) {
+//            return Page.empty(pageable);
+//        }
+//
+//        List<Long> orderedIds = ids.getContent();
+//
+//        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(orderedIds);
+//
+//
+//        Map<Long, TeamComp> map = teamComps.stream()
+//                .collect(Collectors.toMap(TeamComp::getId, t -> t));
+//
+//        List<TeamCompResponse> responses = orderedIds.stream()
+//                .map(map::get)
+//                .filter(Objects::nonNull)
+//                .map(teamCompMapper::toResponse)
+//                .toList();
+//        return new PageImpl<>(responses, pageable, ids.getTotalElements());
+//    }
 
 
 }

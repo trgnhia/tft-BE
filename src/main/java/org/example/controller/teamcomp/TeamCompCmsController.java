@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.dto.teamcomp.*;
 import org.example.services.TeamCompService;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -23,22 +24,33 @@ public class TeamCompCmsController {
     private final TeamCompService teamCompService;
 
 
+//    @GetMapping
+//    public ResponseEntity<ApiResponse<Page<TeamCompResponse>>> filterCms(
+//            @RequestParam(required = false) Long setId,
+//            @RequestParam(required = false) String keyword,
+//            @RequestParam(required = false) List<String> styles,
+//            @RequestParam(required = false) List<String> tiers,
+//            @RequestParam(required = false) Long championId,
+//            @RequestParam(required = false) Boolean deleted,
+//            @RequestParam(required = false) Boolean setDeleted,
+//
+//            Pageable pageable
+//    ) {
+//
+//        Page<TeamCompResponse> response =
+//                teamCompService.filterTeamCompsCms(setId, keyword, styles, tiers, championId, deleted,setDeleted,pageable);
+//
+//        return ResponseEntity.ok(ApiResponse.success(response));
+//    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<Page<TeamCompResponse>>> filterCms(
-            @RequestParam(required = false) Long setId,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) List<String> styles,
-            @RequestParam(required = false) Long championId,
-            @RequestParam(required = false) Boolean deleted,
-            @RequestParam(required = false) Boolean setDeleted,
-
-            Pageable pageable
+            @ParameterObject @ModelAttribute TeamCompFilter filter,
+            @ParameterObject Pageable pageable
     ) {
-
-        Page<TeamCompResponse> response =
-                teamCompService.filterTeamCompsCms(setId, keyword, styles, championId, deleted,setDeleted,pageable);
-
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(
+                ApiResponse.success(teamCompService.filterTeamCompsCms(filter, pageable))
+        );
     }
 
     @PostMapping
