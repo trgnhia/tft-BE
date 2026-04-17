@@ -6,7 +6,6 @@ import org.example.common.enums.PERMISSION;
 import org.example.common.enums.RESOURCE;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
-import org.example.core.api.PageResponse;
 import org.example.dto.permission.CreatePermissionRequest;
 import org.example.dto.permission.UpdatePermissionRequest;
 import org.example.dto.user.PermissionDto;
@@ -18,6 +17,8 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class PermissionServiceImpl implements PermissionService {
@@ -25,14 +26,17 @@ public class PermissionServiceImpl implements PermissionService {
     private final PermissionMapper permissionMapper;
 
     @Override
-    public PageResponse<PermissionDto> getPermissions(String keyword, Pageable pageable) {
+    public List<PermissionDto> getPermissions(String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
-            var paged = permissionRepository.findAll(pageable)
-                    .map(permissionMapper::toDto);
-            return PageResponse.from(paged);
+            return permissionRepository.findAll()
+                    .stream()
+                    .map(permissionMapper::toDto)
+                    .toList();
         }
-        return PageResponse.from(permissionRepository.findWithKeyword(keyword, pageable)
-                .map(permissionMapper::toDto));
+        return permissionRepository.findWithKeyword(keyword)
+                .stream()
+                .map(permissionMapper::toDto)
+                .toList();
     }
 
     @Override

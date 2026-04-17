@@ -16,8 +16,6 @@ import org.example.mapper.RoleMapper;
 import org.example.repositories.PermissionRepository;
 import org.example.repositories.RoleRepository;
 import org.example.services.RoleService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -69,13 +67,17 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public Page<RoleDto> getAll(String keyword, Pageable pageable) {
+    public List<RoleDto> getAll(String keyword) {
         if (keyword == null || keyword.trim().isBlank()) {
-            return roleRepository.findAllNonDelete(pageable)
-                    .map(roleMapper::toDto);
+            return roleRepository.findAll()
+                    .stream()
+                    .map(roleMapper::toDto)
+                    .toList();
         }
-        return roleRepository.findAllNonDeleteWithKeyword(keyword.toUpperCase(), pageable)
-                .map(roleMapper::toDto);
+        return roleRepository.findAllWithKeyword(keyword.toUpperCase())
+                .stream()
+                .map(roleMapper::toDto)
+                .toList();
     }
 
     @Override
