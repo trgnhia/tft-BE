@@ -69,7 +69,7 @@ public class TeamCompServiceImpl implements TeamCompService {
                 tcc.setTeamComp(savedTeamComp);
                 tcc.setChamp(champ);
                 return tcc;
-            }).collect(Collectors.toList());
+            }).toList();
 
             savedTeamComp.setTeamCompChamps(joinList);
             TeamComp finalTeamComp = teamCompRepository.save(savedTeamComp);
@@ -143,6 +143,55 @@ public class TeamCompServiceImpl implements TeamCompService {
 
     @Override
     @Transactional
+    public void restore(Long id) {
+        TeamComp teamComp = teamCompRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
+                        "id ", String.valueOf(id)));
+
+        if (teamComp.getSets()!= null && Boolean.TRUE.equals(teamComp.getSets().isDeleted())) {
+            throw new ConflictException("Không thể khôi phục vì mùa đã bị vô hiệu hóa");
+        }
+
+        if (teamComp.isDeleted()) {
+            teamComp.setDeleted(false);
+            teamCompRepository.save(teamComp);
+            log.info("Restored teamComp id={}", id);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void restoreMany(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return;
+
+        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(ids);
+
+        if (teamComps.size() != ids.size()) {
+            throw new ResourceNotFoundException(
+                    MessageUtils.getMessage(Constants.MessageKey.ERROR_NOT_FOUND)
+            );
+        }
+
+        for (TeamComp tc : teamComps) {
+            if (tc.getSets() != null && Boolean.TRUE.equals(tc.getSets().isDeleted())) {
+                throw new ConflictException("Một số đội hình không thể khôi phục vì mùa đã bị vô hiệu hóa");
+            }
+        }
+
+        teamComps.forEach(tc -> {
+            if (tc.isDeleted()) {
+                tc.setDeleted(false);
+                log.info("Restored teamComp id={}", tc.getId());
+            }
+        });
+
+        teamCompRepository.saveAll(teamComps);
+    }
+
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
@@ -169,10 +218,7 @@ public class TeamCompServiceImpl implements TeamCompService {
     }
     @Override
     public Page<TeamCompResponse> filterTeamComps(TeamCompFilter filter, Pageable pageable) {
-        // Gọi thẳng filter xuống repo (Repo đã tự set deleted = false cho luồng này)
         Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(filter, pageable);
-
-        // Dùng hàm chung để map và giữ nguyên thứ tự sắp xếp (Sorting)
         return mapToPageResponsePreserveOrder(pagedIds, pageable);
     }
 
@@ -180,7 +226,6 @@ public class TeamCompServiceImpl implements TeamCompService {
     public Page<TeamCompResponse> filterTeamCompsCms(TeamCompFilter filter, Pageable pageable) {
         Page<Long> pagedIds = teamCompRepository.filterTeamCompIdsCms(filter, pageable);
 
-        // Dùng chung hàm map
         return mapToPageResponsePreserveOrder(pagedIds, pageable);
     }
 
@@ -191,14 +236,11 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         List<Long> orderedIds = pagedIds.getContent();
 
-        // Lấy danh sách Entities (hàm IN không đảm bảo thứ tự)
         List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(orderedIds);
 
-        // Đưa vào Map để lookup
         Map<Long, TeamComp> map = teamComps.stream()
                 .collect(Collectors.toMap(TeamComp::getId, t -> t));
 
-        // Duyệt lại theo đúng danh sách ID đã được Sort từ DB để trả về kết quả
         List<TeamCompResponse> responses = orderedIds.stream()
                 .map(map::get)
                 .filter(Objects::nonNull)
@@ -207,59 +249,4 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
     }
-
-//    @Override
-//    public Page<TeamCompResponse> filterTeamComps(Long setId, String keyword, List<String> styles, Long championId, Pageable pageable) {
-//        Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(setId, keyword, styles, championId, pageable);
-//
-//        if (pagedIds.isEmpty()) {
-//            return Page.empty(pageable);
-//        }
-//        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(pagedIds.getContent());
-//
-//        List<TeamCompResponse> responses = teamComps.stream()
-//                .map(teamCompMapper::toResponse)
-//                .collect(Collectors.toList());
-//
-//        return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
-//    }
-//
-//
-//
-//    @Override
-//    public Page<TeamCompResponse> filterTeamCompsCms(
-//            Long setId,
-//            String keyword,
-//            List<String> styles,
-//            List<String> tiers,
-//            Long championId,
-//            Boolean deleted,
-//            Boolean setDeleted,
-//            Pageable pageable
-//    ) {
-//        Page<Long> ids = teamCompRepository.filterTeamCompIdsCms(
-//                setId, keyword, styles, tiers, championId, deleted, setDeleted, pageable
-//        );
-//
-//        if (ids.isEmpty()) {
-//            return Page.empty(pageable);
-//        }
-//
-//        List<Long> orderedIds = ids.getContent();
-//
-//        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(orderedIds);
-//
-//
-//        Map<Long, TeamComp> map = teamComps.stream()
-//                .collect(Collectors.toMap(TeamComp::getId, t -> t));
-//
-//        List<TeamCompResponse> responses = orderedIds.stream()
-//                .map(map::get)
-//                .filter(Objects::nonNull)
-//                .map(teamCompMapper::toResponse)
-//                .toList();
-//        return new PageImpl<>(responses, pageable, ids.getTotalElements());
-//    }
-
-
 }

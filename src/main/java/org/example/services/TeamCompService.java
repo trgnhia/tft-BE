@@ -13,8 +13,10 @@ public interface TeamCompService {
     TeamCompResponse update(Long id, TeamCompRequest request);
     void delete(Long id);
     TeamCompResponse getById(Long id);
-
     void deleteMany(List<Long> ids);
+
+    void restore(Long id);
+    void restoreMany(List<Long> ids);
     // Luồng User App
     Page<TeamCompResponse> filterTeamComps(TeamCompFilter filter, Pageable pageable);
 
