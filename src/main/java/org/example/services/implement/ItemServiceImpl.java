@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
+import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
@@ -111,23 +112,6 @@ public class ItemServiceImpl implements ItemService {
                 .toList();
     }
 
-//    @Override
-//    public PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId) {
-//        Pageable pageable = PageRequest.of(
-//                page,
-//                size,
-//                Sort.by(Sort.Direction.DESC, "createdAt")
-//        );
-//
-//        String normalizedKeyword = (keyword == null) ? "" : keyword.trim();
-//
-//        Page<Item> itemPage = itemRepo.searchItemsForCms(normalizedKeyword, setId, pageable);
-//        Page<ItemResponse> responsePage = itemPage.map(itemMapper::toItemResponse);
-//
-//        return PageResponse.from(responsePage);
-//    }
-//
-//
 
     @Override
     public PageResponse<ItemResponse> getItemsForCms(int page,
@@ -221,6 +205,25 @@ public class ItemServiceImpl implements ItemService {
         itemRepo.save(item);
     }
 
+    @Override
+    @Transactional
+    public void deleteMany(List<Long> ids) {
+
+        List<Item> items = itemRepo.findAllByIdInAndDeletedFalse(ids);
+
+        if (items.size() != ids.size()) {
+            throw new DataException(
+                    ErrorCode.INCOMPLETE_DATA,
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM)
+            );
+        }
+
+        items.forEach(item -> item.setDeleted(true));
+
+        itemRepo.saveAll(items);
+
+        champItemRecommendRepo.softDeleteByItemIds(ids);
+    }
 
     // ---------- PRIVATE HELPER ----------
 

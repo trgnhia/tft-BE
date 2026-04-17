@@ -24,4 +24,5 @@ public class ItemResponse {
     private ItemStats stats;
     private Instant createdAt;
     private Instant updatedAt;
+    private boolean deleted;
 }

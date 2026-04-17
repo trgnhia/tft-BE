@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
+import org.example.dto.champs.BulkDeleteRequest;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
 import org.example.services.ItemService;
@@ -18,18 +19,6 @@ import org.springframework.web.bind.annotation.*;
 public class ItemCmsController {
 
     private final ItemService itemService;
-
-//    @GetMapping
-//    public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "10") int size,
-//            @RequestParam(required = false) String keyword,
-//            @RequestParam(required = false) Long setId
-//    ) {
-//        return ResponseEntity.ok(
-//                ApiResponse.success(itemService.getItemsForCms(page, size, keyword, setId))
-//        );
-//    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(
@@ -79,6 +68,12 @@ public class ItemCmsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         itemService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteMany(@Valid @RequestBody BulkDeleteRequest request) {
+        itemService.deleteMany(request.getIds());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
