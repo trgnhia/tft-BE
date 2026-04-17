@@ -4,9 +4,9 @@ import org.example.dto.role.CreateRoleRequest;
 import org.example.dto.role.RoleDto;
 import org.example.dto.role.UpdateRolePermissionRequest;
 import org.example.dto.role.UpdateRoleRequest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public interface RoleService {
@@ -16,7 +16,7 @@ public interface RoleService {
 
     RoleDto deleteRole(Long id);
 
-    Page<RoleDto> getAll(String keyword, Pageable pageable);
+    List<RoleDto> getAll(String keyword);
 
     RoleDto getById(Long id);
 
