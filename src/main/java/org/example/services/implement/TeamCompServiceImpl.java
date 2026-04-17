@@ -21,10 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -82,7 +79,7 @@ public class TeamCompServiceImpl implements TeamCompService {
 
     @Override
     public TeamCompResponse getById(Long id) {
-        TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
+        TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
@@ -92,11 +89,11 @@ public class TeamCompServiceImpl implements TeamCompService {
     @Override
     @Transactional
     public TeamCompResponse update(Long id, TeamCompRequest request) {
-        TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
+        TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                         "id " + String.valueOf(id)));
         if (!teamComp.getName().equals(request.getName()) &&
-                teamCompRepository.existsByNameAndDeletedFalse(request.getName())) {
+                teamCompRepository.existsByNameAndIdNotAndDeletedFalse(request.getName(), id)) {
             throw new ConflictException(
                     MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
                     request.getName()
@@ -104,6 +101,7 @@ public class TeamCompServiceImpl implements TeamCompService {
         }
 
         teamCompMapper.updateEntity(request, teamComp);
+
 
         if (request.getChampionIds() != null) {
             Set<Long> uniqueChampIds = new HashSet<>(request.getChampionIds());
@@ -185,4 +183,41 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         teamCompRepository.saveAll(teamComps);
     }
+
+
+    @Override
+    public Page<TeamCompResponse> filterTeamCompsCms(
+            Long setId,
+            String keyword,
+            List<String> styles,
+            Long championId,
+            Boolean deleted,
+            Boolean setDeleted,
+            Pageable pageable
+    ) {
+        Page<Long> ids = teamCompRepository.filterTeamCompIdsCms(
+                setId, keyword, styles, championId, deleted, setDeleted, pageable
+        );
+
+        if (ids.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Long> orderedIds = ids.getContent();
+
+        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(orderedIds);
+
+
+        Map<Long, TeamComp> map = teamComps.stream()
+                .collect(Collectors.toMap(TeamComp::getId, t -> t));
+
+        List<TeamCompResponse> responses = orderedIds.stream()
+                .map(map::get)
+                .filter(Objects::nonNull)
+                .map(teamCompMapper::toResponse)
+                .toList();
+        return new PageImpl<>(responses, pageable, ids.getTotalElements());
+    }
+
+
 }
