@@ -25,11 +25,13 @@ public enum ErrorCode {
     SESSION_REVOKED("3007"),
     UNAUTHORIZED("3008"),
     MISSING_TOKEN("3009"),
+    DELETE_BASIC_ROLE("3010"),
+    UPDATE_ADMIN_ROLE("3011"),
 
     // Error system: 4xxx
     UNEXPECTED_ERROR("4000"),
     SERVICE_UNAVAILABLE("4001"),
-    CONNECTION("4002") ;
+    CONNECTION("4002");
 
 
     ErrorCode(String code) {
