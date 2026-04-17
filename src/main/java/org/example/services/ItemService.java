@@ -3,7 +3,6 @@ package org.example.services;
 import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
-import org.example.entities.Sets;
 
 import java.util.List;
 
@@ -14,6 +13,8 @@ public interface ItemService {
     ItemResponse getActiveItemById(Long id);
     List<ItemResponse> getAllItem ();
     ItemResponse update (Long id, ItemRequest request);
+    ItemResponse restore(Long id);
+    void restoreMany(List<Long> ids);
     void delete (Long id);
     void deleteMany(List<Long> ids);
     PageResponse<ItemResponse> getItemsForCms(int page,

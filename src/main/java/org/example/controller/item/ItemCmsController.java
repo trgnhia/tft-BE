@@ -4,9 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
-import org.example.dto.champs.BulkDeleteRequest;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
+import org.example.dto.sets.BulkRequestId;
 import org.example.services.ItemService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -72,8 +72,19 @@ public class ItemCmsController {
     }
 
     @DeleteMapping
-    public ResponseEntity<ApiResponse<Void>> deleteMany(@Valid @RequestBody BulkDeleteRequest request) {
+    public ResponseEntity<ApiResponse<Void>> deleteMany(@Valid @RequestBody BulkRequestId request) {
         itemService.deleteMany(request.getIds());
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<ItemResponse>> restore(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(itemService.restore(id)));
+    }
+
+    @PatchMapping("/restore")
+    public ResponseEntity<ApiResponse<Void>> restoreMany(@Valid @RequestBody BulkRequestId request) {
+        itemService.restoreMany(request.getIds());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

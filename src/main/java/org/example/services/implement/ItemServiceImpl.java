@@ -225,6 +225,38 @@ public class ItemServiceImpl implements ItemService {
         champItemRecommendRepo.softDeleteByItemIds(ids);
     }
 
+    @Override
+    @Transactional
+    public ItemResponse restore(Long id) {
+        Item item = itemRepo.findRestorableById(id)
+                .orElseThrow(() -> new DataException(
+                        ErrorCode.INCOMPLETE_DATA,
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM)
+                ));
+
+        item.setDeleted(false);
+
+        Item savedItem = itemRepo.save(item);
+        return itemMapper.toItemResponse(savedItem);
+    }
+
+    @Override
+    @Transactional
+    public void restoreMany(List<Long> ids) {
+        List<Item> items = itemRepo.findAllRestorableByIds(ids);
+
+        if (items.size() != ids.size()) {
+            throw new DataException(
+                    ErrorCode.INCOMPLETE_DATA,
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_ITEM)
+            );
+        }
+
+        items.forEach(item -> item.setDeleted(false));
+        itemRepo.saveAll(items);
+    }
+
+
     // ---------- PRIVATE HELPER ----------
 
 

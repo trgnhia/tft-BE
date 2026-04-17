@@ -35,4 +35,24 @@ public interface ItemRepository extends JpaRepository<Item, Long> , JpaSpecifica
 
     @Query("select i from Item i join fetch i.sets")
     List<Item> findAllWithSets();
+
+    @Query("""
+            select i
+            from Item i
+            join fetch i.sets s
+            where i.id = :id
+              and i.deleted = true
+              and s.deleted = false
+            """)
+    Optional<Item> findRestorableById(@Param("id") Long id);
+
+    @Query("""
+            select i
+            from Item i
+            join fetch i.sets s
+            where i.id in :ids
+              and i.deleted = true
+              and s.deleted = false
+            """)
+    List<Item> findAllRestorableByIds(@Param("ids") List<Long> ids);
 }
