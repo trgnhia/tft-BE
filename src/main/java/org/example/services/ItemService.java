@@ -14,6 +14,22 @@ public interface ItemService {
     List<ItemResponse> getAllItem ();
     ItemResponse update (Long id, ItemRequest request);
     void delete (Long id);
-    PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId);
-    PageResponse<ItemResponse> getPublishedItems(int page, int size, String keyword, Long setId);
+   // PageResponse<ItemResponse> getItemsForCms(int page, int size, String keyword, Long setId);
+    PageResponse<ItemResponse> getItemsForCms(int page,
+                                              int size,
+                                              String keyword,
+                                              Long setId,
+                                              Boolean setDeleted,
+                                              Boolean itemDeleted,
+                                              String tier,
+                                              String sortBy,
+                                              String sortDir);
+
+    PageResponse<ItemResponse> getPublishedItems(int page,
+                                                 int size,
+                                                 String keyword,
+                                                 Long setId,
+                                                 String tier,
+                                                 String sortBy,
+                                                 String sortDir);
 }

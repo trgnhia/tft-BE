@@ -19,15 +19,44 @@ public class ItemCmsController {
 
     private final ItemService itemService;
 
+//    @GetMapping
+//    public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size,
+//            @RequestParam(required = false) String keyword,
+//            @RequestParam(required = false) Long setId
+//    ) {
+//        return ResponseEntity.ok(
+//                ApiResponse.success(itemService.getItemsForCms(page, size, keyword, setId))
+//        );
+//    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long setId
+            @RequestParam(required = false) Long setId,
+            @RequestParam(required = false) Boolean setDeleted,
+            @RequestParam(required = false) Boolean itemDeleted,
+            @RequestParam(required = false) String tier,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(itemService.getItemsForCms(page, size, keyword, setId))
+                ApiResponse.success(
+                        itemService.getItemsForCms(
+                                page,
+                                size,
+                                keyword,
+                                setId,
+                                setDeleted,
+                                itemDeleted,
+                                tier,
+                                sortBy,
+                                sortDir
+                        )
+                )
         );
     }
 
