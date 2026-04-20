@@ -20,4 +20,16 @@ public interface TeamCompService {
             Long championId,        // Lọc theo tướng (Dropdown Champions)
             Pageable pageable       // Phân trang
     );
+
+    void deleteMany(List<Long> ids);
+
+    public Page<TeamCompResponse> filterTeamCompsCms(
+            Long setId,
+            String keyword,
+            List<String> styles,
+            Long championId,
+            Boolean deleted,
+            Boolean setDeleted,
+            Pageable pageable
+    );
 }

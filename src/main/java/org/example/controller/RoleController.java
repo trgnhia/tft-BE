@@ -3,7 +3,6 @@ package org.example.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
-import org.example.core.api.PageResponse;
 import org.example.dto.role.CreateRoleRequest;
 import org.example.dto.role.RoleDto;
 import org.example.dto.role.UpdateRolePermissionRequest;
@@ -17,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/roles")
@@ -25,10 +26,10 @@ public class RoleController {
     private final RoleService roleService;
 
     @GetMapping
-    public ResponseEntity<PageResponse<RoleDto>> getAll(@RequestParam(required = false) String keyword,
-                                                        @ParameterObject @PageableDefault(sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-        var result = roleService.getAll(keyword, pageable);
-        return ResponseEntity.ok(PageResponse.from(result));
+    public ResponseEntity<ApiResponse<List<RoleDto>>> getAll(@RequestParam(required = false) String keyword,
+                                                             @ParameterObject @PageableDefault(sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        var result = roleService.getAll(keyword);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PostMapping

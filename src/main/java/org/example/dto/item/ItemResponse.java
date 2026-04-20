@@ -18,9 +18,11 @@ public class ItemResponse {
     private Long setId;
     private String name;
     private String imageUrl;
+    private String tier;
     private String setName;
     private ItemEffects effects;
     private ItemStats stats;
     private Instant createdAt;
     private Instant updatedAt;
+    private boolean deleted;
 }

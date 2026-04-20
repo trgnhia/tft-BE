@@ -6,19 +6,16 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.common.entity.BaseEntity;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.example.common.entity.AuditableEntity;
 
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "permissions")
 @Getter
 @Setter
-public class Permission extends BaseEntity {
+public class Permission extends AuditableEntity {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code;
     @Column(name = "name")
@@ -26,12 +23,5 @@ public class Permission extends BaseEntity {
     @Column(name = "description")
     private String description;
     @ManyToMany(mappedBy = "permissions")
-    private Set<Role> roles = new HashSet<>();
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+    private List<Role> roles = new ArrayList<>();
 }

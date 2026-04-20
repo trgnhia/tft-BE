@@ -12,7 +12,7 @@ public class TeamCompResponse {
     private String tier;
     private String name;
     private String style;
-
+    private boolean deleted;
     private SetSimpleDto set;
 
     private List<ChampionSimpleDto> champions;
@@ -22,7 +22,7 @@ public class TeamCompResponse {
     public static class SetSimpleDto {
         private Long id;
         private String name;
-        private boolean active;
+        private boolean deleted;
     }
 
     @Getter

@@ -45,8 +45,12 @@ public class TeamCompRepositoryImpl implements TeamCompRepositoryCustom {
         }
 
         if (styles != null && !styles.isEmpty()) {
-            whereClause.append(" AND tc.style IN (:styles) ");
-            params.addValue("styles", styles);
+            whereClause.append(" AND UPPER(tc.style) IN (:styles) ");
+            params.addValue("styles",
+                    styles.stream()
+                            .map(String::toUpperCase)
+                            .toList()
+            );
         }
 
         if (championId != null) {
@@ -75,4 +79,79 @@ public class TeamCompRepositoryImpl implements TeamCompRepositoryCustom {
 
         return new PageImpl<>(ids, pageable, totalElements);
     }
+
+    @Override
+    public Page<Long> filterTeamCompIdsCms(Long setId, String keyword, List<String> styles, Long championId, Boolean deleted, Boolean setDeleted, Pageable pageable) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT DISTINCT tc.id FROM team_comp tc " +
+                        "LEFT JOIN set s ON tc.set_id = s.id "
+        );
+
+        StringBuilder countSql = new StringBuilder(
+                "SELECT COUNT(DISTINCT tc.id) FROM team_comp tc " +
+                        "LEFT JOIN set s ON tc.set_id = s.id "
+        );
+
+        if (championId != null) {
+            String join = " INNER JOIN team_comp_champ tcc ON tc.id = tcc.team_comp_id ";
+            sql.append(join);
+            countSql.append(join);
+        }
+
+        StringBuilder where = new StringBuilder(" WHERE 1=1 ");
+        MapSqlParameterSource params = new MapSqlParameterSource();
+
+
+        if (deleted != null) {
+            where.append(" AND tc.deleted = :deleted ");
+            params.addValue("deleted", deleted);
+        }
+
+
+        if (setDeleted != null) {
+            where.append(" AND s.deleted = :setDeleted ");
+            params.addValue("setDeleted", setDeleted);
+        }
+
+        if (setId != null) {
+            where.append(" AND tc.set_id = :setId ");
+            params.addValue("setId", setId);
+        }
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            where.append(" AND LOWER(tc.name) LIKE :keyword ");
+            params.addValue("keyword", "%" + keyword.toLowerCase() + "%");
+        }
+
+        if (styles != null && !styles.isEmpty()) {
+            where.append(" AND UPPER(tc.style) IN (:styles) ");
+            params.addValue("styles", styles.stream().map(String::toUpperCase).toList());
+        }
+
+        if (championId != null) {
+            where.append(" AND tcc.champion_id = :championId ");
+            params.addValue("championId", championId);
+        }
+
+        sql.append(where);
+        countSql.append(where);
+
+        Long total = jdbcTemplate.queryForObject(countSql.toString(), params, Long.class);
+        if (total == null || total == 0) {
+            return Page.empty(pageable);
+        }
+
+        sql.append(" ORDER BY tc.id DESC ");
+        sql.append(" LIMIT :limit OFFSET :offset ");
+
+        params.addValue("limit", pageable.getPageSize());
+        params.addValue("offset", pageable.getOffset());
+
+        List<Long> ids = jdbcTemplate.queryForList(sql.toString(), params, Long.class);
+
+        return new PageImpl<>(ids, pageable, total);
+    }
+
 }
+
+

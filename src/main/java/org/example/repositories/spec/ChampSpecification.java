@@ -1,8 +1,12 @@
 package org.example.repositories.spec;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.example.dto.champs.ChampFilterRequest;
 import org.example.entities.champ.Champ;
+import org.example.entities.champ.ChampTrait;
+import org.example.entities.trait.Trait;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
@@ -15,6 +19,9 @@ public class ChampSpecification {
     public static Specification<Champ> withFilter(ChampFilterRequest filter) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (query != null) {
+                query.distinct(true);
+            }
 
             if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
                 predicates.add(cb.like(
@@ -29,16 +36,14 @@ public class ChampSpecification {
                 predicates.add(cb.equal(root.get("cost"), filter.getCost()));
             }
             if (filter.getTrait() != null && !filter.getTrait().isBlank()) {
-                predicates.add(cb.like(
-                        cb.lower(root.get("trait")),
-                        "%" + filter.getTrait().trim().toLowerCase() + "%"
+                Join<Champ, ChampTrait> champTraitJoin = root.join("champTraits", JoinType.LEFT);
+                Join<ChampTrait, Trait> traitJoin = champTraitJoin.join("trait", JoinType.LEFT);
+                String normalizedTrait = "%" + filter.getTrait().trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(traitJoin.get("name")), normalizedTrait),
+                        cb.like(cb.lower(traitJoin.get("slug")), normalizedTrait)
                 ));
-            }
-            if (filter.getTier() != null && !filter.getTier().isBlank()) {
-                predicates.add(cb.equal(
-                        cb.lower(root.get("tier")),
-                        filter.getTier().trim().toLowerCase()
-                ));
+                predicates.add(cb.equal(traitJoin.get("sets").get("id"), root.get("sets").get("id")));
             }
             if (filter.getDeleted() != null) {
                 predicates.add(cb.equal(root.get("deleted"), filter.getDeleted()));

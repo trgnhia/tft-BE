@@ -1,9 +1,13 @@
 package org.example.common.constant;
 
 public final class Constants {
-    private Constants(){}
+    private Constants() {
+    }
+
     public static final class Api {
-        private Api(){}
+        private Api() {
+        }
+
         public static final String SUCCESS_CODE = "00";
         public static final String FAIL_CODE = "11";
         public static final String SUCCESS_MESSAGE = "SUCCESS";
@@ -11,7 +15,8 @@ public final class Constants {
     }
 
     public static final class MessageKey {
-        private MessageKey() {}
+        private MessageKey() {
+        }
 
         public static final String ERROR_ALREADY_EXISTS = "error.ALREADY_EXIST";
         public static final String ERROR_NOT_FOUND = "error.NOT_FOUND";
@@ -101,8 +106,40 @@ public final class Constants {
         public static final String CHAMP_STATS_CRIT_CHANCE_MAX = "champ.stats.crit_chance.max";
 
 
-
         public static final String DUPLICATE_USERNAME = "error.DUPLICATE_USERNAME";
         public static final String DUPLICATE_EMAIL = "error.DUPLICATE_EMAIL";
+
+
+        public static final String USER_IMPORT_USERNAME_REQUIRED = "{error.USER_IMPORT_USERNAME_REQUIRED}";
+        public static final String USER_IMPORT_USERNAME_SIZE = "{error.USER_IMPORT_USERNAME_SIZE}";
+        public static final String USER_IMPORT_EMAIL_REQUIRED = "{error.USER_IMPORT_EMAIL_REQUIRED}";
+        public static final String USER_IMPORT_EMAIL_INVALID = "{error.USER_IMPORT_EMAIL_INVALID}";
+        public static final String USER_IMPORT_PASSWORD_REQUIRED = "{error.USER_IMPORT_PASSWORD_REQUIRED}";
+        public static final String USER_IMPORT_ROLE_ID_REQUIRED = "{error.USER_IMPORT_ROLE_ID_REQUIRED}";
+        public static final String USER_IMPORT_ENABLED_REQUIRED = "{error.USER_IMPORT_ENABLED_REQUIRED}";
+
+        public static final String PERMISSION_NOT_FOUND = "{error.PERMISSION_NOT_FOUND}";
+
+        // generic import messages
+        public static final String IMPORT_FILE_EMPTY = "import.file.empty";
+        public static final String IMPORT_SINGLE_FILE_REQUIRED = "import.single.file.required";
+        public static final String IMPORT_FILE_SIZE_EXCEEDED = "import.file.size.exceeded";
+        public static final String IMPORT_REQUEST_SIZE_EXCEEDED = "import.request.size.exceeded";
+        public static final String IMPORT_MULTIPART_INVALID = "import.multipart.invalid";
+        public static final String IMPORT_ROW_LIMIT_EXCEEDED = "import.row.limit.exceeded";
+        public static final String IMPORT_UNSUPPORTED_FILE_TYPE = "import.unsupported.file.type";
+        public static final String IMPORT_READ_FILE_FAILED = "import.read.file.failed";
+        public static final String IMPORT_BUILD_ERROR_FILE_FAILED = "import.build.error.file.failed";
+        public static final String IMPORT_MISSING_COLUMNS = "import.missing.columns";
+        public static final String IMPORT_NO_COLUMNS_ANNOTATED = "import.no.columns.annotated";
+        public static final String IMPORT_DTO_NO_NOARGS = "import.dto.no.noargs";
+        public static final String IMPORT_INVALID_VALUE_FORMAT = "import.invalid.value.format";
+        public static final String IMPORT_UNSUPPORTED_FIELD_TYPE = "import.unsupported.field.type";
+        public static final String IMPORT_INVALID_ENUM_VALUE = "import.invalid.enum.value";
+        public static final String IMPORT_INVALID_BOOLEAN_VALUE = "import.invalid.boolean.value";
+        public static final String IMPORT_FILE_EXTENSION_MISSING = "import.file.extension.missing";
+        public static final String IMPORT_COLUMN_REQUIRED = "import.column.required";
+        public static final String IMPORT_COLUMN_INVALID_VALUE = "import.column.invalid.value";
+        public static final String IMPORT_PERSIST_GENERIC_ERROR = "import.persist.generic.error";
     }
 }

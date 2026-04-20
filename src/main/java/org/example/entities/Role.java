@@ -5,8 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.example.common.entity.AuditableEntity;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "roles")
@@ -20,12 +20,12 @@ public class Role extends AuditableEntity {
     @Column(name = "description")
     private String description;
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    private Set<User> users = new HashSet<>();
-    @ManyToMany(fetch = FetchType.EAGER)
+    private List<User> users = new ArrayList<>();
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "role_permissions",
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
-    private Set<Permission> permissions = new HashSet<>();
+    private List<Permission> permissions = new ArrayList<>();
 }

@@ -34,6 +34,7 @@ public interface TeamCompMapper {
     @Mapping(target = "teamCompChamps", ignore = true)
     @Mapping(target = "sets", ignore = true)
     @Mapping(target = "slug", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
     void updateEntity(TeamCompRequest request, @MappingTarget TeamComp entity);
 
     @AfterMapping

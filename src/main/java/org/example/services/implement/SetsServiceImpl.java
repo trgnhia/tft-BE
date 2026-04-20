@@ -5,6 +5,7 @@ import org.example.common.enums.ErrorCode;
 import org.example.common.enums.NotificationTargetType;
 import org.example.common.enums.NotificationType;
 import org.example.common.exception.ConflictException;
+import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
 import org.example.dto.notification.NotificationCreateCommand;
@@ -49,14 +50,16 @@ public class SetsServiceImpl implements SetsService {
     }
 
     @Override
-    public PageResponse<SetsResponse> getAllSet(int page, int size, Boolean deleted) {
+    public PageResponse<SetsResponse> getAllSet(int page, int size, String keyword, Boolean deleted) {
         Pageable pageable = PageRequest.of(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Sets> setsPage = setRepo.searchSetsForCms(deleted, pageable);
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+
+        Page<Sets> setsPage = setRepo.searchSetsForCms(normalizedKeyword, deleted, pageable);
         Page<SetsResponse> responsePage = setsPage.map(setsMapper::toSetsResponse);
 
         return PageResponse.from(responsePage);
@@ -94,11 +97,12 @@ public class SetsServiceImpl implements SetsService {
 
         validateDuplicateNameForUpdate(normalizedName, id);
 
+        setsMapper.updateEntity(request, existingSet);
         existingSet.setName(normalizedName);
+
         Sets updatedSet = setRepo.save(existingSet);
         return setsMapper.toSetsResponse(updatedSet);
     }
-
     @Override
     @Transactional
     public void delete(Long id) {
@@ -113,6 +117,22 @@ public class SetsServiceImpl implements SetsService {
         }
         sets.setDeleted(true);
         setRepo.save(sets);
+    }
+
+    @Override
+    @Transactional
+    public void deletedMany(List<Long> ids) {
+        List<Sets> setsList = setRepo.findAllByIdInAndDeletedFalse(ids);
+
+        if (setsList.size() != ids.size()) {
+            throw new DataException(
+                    ErrorCode.INCOMPLETE_DATA,
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_SETS)
+            );
+        }
+
+        setsList.forEach(s -> s.setDeleted(true));
+        setRepo.saveAll(setsList);
     }
 
     private Sets getById(Long id) {

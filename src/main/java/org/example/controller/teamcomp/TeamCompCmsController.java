@@ -22,6 +22,25 @@ import java.util.List;
 public class TeamCompCmsController {
     private final TeamCompService teamCompService;
 
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<TeamCompResponse>>> filterCms(
+            @RequestParam(required = false) Long setId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<String> styles,
+            @RequestParam(required = false) Long championId,
+            @RequestParam(required = false) Boolean deleted,
+            @RequestParam(required = false) Boolean setDeleted,
+
+            Pageable pageable
+    ) {
+
+        Page<TeamCompResponse> response =
+                teamCompService.filterTeamCompsCms(setId, keyword, styles, championId, deleted,setDeleted,pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     public ResponseEntity<ApiResponse<TeamCompResponse>> create(@Valid @RequestBody TeamCompRequest request) {
@@ -55,6 +74,13 @@ public class TeamCompCmsController {
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         teamCompService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @DeleteMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    public ResponseEntity<ApiResponse<Void>> deleteMany(@RequestBody List<Long> ids) {
+        teamCompService.deleteMany(ids);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
