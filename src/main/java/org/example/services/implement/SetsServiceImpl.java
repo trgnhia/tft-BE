@@ -81,11 +81,12 @@ public class SetsServiceImpl implements SetsService {
 
         validateDuplicateNameForUpdate(normalizedName, id);
 
+        setsMapper.updateEntity(request, existingSet);
         existingSet.setName(normalizedName);
+
         Sets updatedSet = setRepo.save(existingSet);
         return setsMapper.toSetsResponse(updatedSet);
     }
-
     @Override
     @Transactional
     public void delete(Long id) {

@@ -61,7 +61,7 @@ public interface ChampItemRecommendRepository extends JpaRepository<ChampItemRec
     @Query("""
                 update ChampItemRecommend c
                 set c.deleted = true
-                where c.item.sets.id = :setId
+                where c.item.id in :ids
             """)
-    void softDeleteBySetId(@Param("setId") Long setId);
+    void softDeleteByItemIds(@Param("ids") List<Long> ids);
 }
