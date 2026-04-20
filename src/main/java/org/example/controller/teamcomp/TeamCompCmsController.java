@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.dto.teamcomp.*;
 import org.example.services.TeamCompService;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,20 +25,12 @@ public class TeamCompCmsController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<TeamCompResponse>>> filterCms(
-            @RequestParam(required = false) Long setId,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) List<String> styles,
-            @RequestParam(required = false) Long championId,
-            @RequestParam(required = false) Boolean deleted,
-            @RequestParam(required = false) Boolean setDeleted,
-
-            Pageable pageable
+            @ParameterObject @ModelAttribute TeamCompFilter filter,
+            @ParameterObject Pageable pageable
     ) {
-
-        Page<TeamCompResponse> response =
-                teamCompService.filterTeamCompsCms(setId, keyword, styles, championId, deleted,setDeleted,pageable);
-
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(
+                ApiResponse.success(teamCompService.filterTeamCompsCms(filter, pageable))
+        );
     }
 
     @PostMapping
@@ -60,14 +52,18 @@ public class TeamCompCmsController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-
-    @PatchMapping("/{id}")
+    @PatchMapping("/{id}/restore")
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
-    public ResponseEntity<ApiResponse<TeamCompResponse>> patchUpdate(
-            @PathVariable Long id,
-            @RequestBody TeamCompRequest request) {
-        TeamCompResponse response = teamCompService.update(id, request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+    public ApiResponse<Void> restore(@PathVariable Long id) {
+        teamCompService.restore(id);
+        return ApiResponse.success(null);
+    }
+
+    @PatchMapping("/restore")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    public ApiResponse<Void> restoreMany(@RequestBody List<Long> ids) {
+        teamCompService.restoreMany(ids);
+        return ApiResponse.success(null);
     }
 
     @DeleteMapping("/{id}")

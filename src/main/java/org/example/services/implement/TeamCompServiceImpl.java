@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.constant.Constants;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
+import org.example.dto.teamcomp.TeamCompFilter;
 import org.example.dto.teamcomp.TeamCompRequest;
 import org.example.dto.teamcomp.TeamCompResponse;
 import org.example.entities.champ.Champ;
@@ -68,7 +69,7 @@ public class TeamCompServiceImpl implements TeamCompService {
                 tcc.setTeamComp(savedTeamComp);
                 tcc.setChamp(champ);
                 return tcc;
-            }).collect(Collectors.toList());
+            }).collect(Collectors.toCollection(ArrayList::new));
 
             savedTeamComp.setTeamCompChamps(joinList);
             TeamComp finalTeamComp = teamCompRepository.save(savedTeamComp);
@@ -82,7 +83,7 @@ public class TeamCompServiceImpl implements TeamCompService {
         TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
-                        "id " + String.valueOf(id)));
+                        "id " ,String.valueOf(id)));
         return teamCompMapper.toResponse(teamComp);
     }
 
@@ -91,7 +92,7 @@ public class TeamCompServiceImpl implements TeamCompService {
     public TeamCompResponse update(Long id, TeamCompRequest request) {
         TeamComp teamComp = teamCompRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
-                        "id " + String.valueOf(id)));
+                        "id " ,String.valueOf(id)));
         if (!teamComp.getName().equals(request.getName()) &&
                 teamCompRepository.existsByNameAndIdNotAndDeletedFalse(request.getName(), id)) {
             throw new ConflictException(
@@ -142,31 +143,65 @@ public class TeamCompServiceImpl implements TeamCompService {
 
     @Override
     @Transactional
+    public void restore(Long id) {
+        TeamComp teamComp = teamCompRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
+                        "id ", String.valueOf(id)));
+
+        if (teamComp.getSets()!= null && Boolean.TRUE.equals(teamComp.getSets().isDeleted())) {
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS_STATE_LOCK)
+            );
+        }
+
+        if (teamComp.isDeleted()) {
+            teamComp.setDeleted(false);
+            teamCompRepository.save(teamComp);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void restoreMany(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return;
+
+        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(ids);
+
+        if (teamComps.size() != ids.size()) {
+            throw new ResourceNotFoundException(
+                    MessageUtils.getMessage(Constants.MessageKey.ERROR_NOT_FOUND)
+            );
+        }
+
+        for (TeamComp tc : teamComps) {
+            if (tc.getSets() != null && Boolean.TRUE.equals(tc.getSets().isDeleted())) {
+                throw new ConflictException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS_STATE_LOCK)
+                );
+            }
+        }
+
+        teamComps.forEach(tc -> {
+            if (tc.isDeleted()) {
+                tc.setDeleted(false);
+            }
+        });
+
+        teamCompRepository.saveAll(teamComps);
+    }
+
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         TeamComp teamComp = teamCompRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS),
-                        "id " + String.valueOf(id)));
+                        "id " ,String.valueOf(id)));
 
         teamComp.setDeleted(true);
         teamCompRepository.save(teamComp);
     }
-
-    @Override
-    public Page<TeamCompResponse> filterTeamComps(Long setId, String keyword, List<String> styles, Long championId, Pageable pageable) {
-        Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(setId, keyword, styles, championId, pageable);
-
-        if (pagedIds.isEmpty()) {
-            return Page.empty(pageable);
-        }
-        List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(pagedIds.getContent());
-
-        List<TeamCompResponse> responses = teamComps.stream()
-                .map(teamCompMapper::toResponse)
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
-    }
-
     @Override
     @Transactional
     public void deleteMany(List<Long> ids) {
@@ -183,30 +218,27 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         teamCompRepository.saveAll(teamComps);
     }
-
+    @Override
+    public Page<TeamCompResponse> filterTeamComps(TeamCompFilter filter, Pageable pageable) {
+        Page<Long> pagedIds = teamCompRepository.filterTeamCompIds(filter, pageable);
+        return mapToPageResponsePreserveOrder(pagedIds, pageable);
+    }
 
     @Override
-    public Page<TeamCompResponse> filterTeamCompsCms(
-            Long setId,
-            String keyword,
-            List<String> styles,
-            Long championId,
-            Boolean deleted,
-            Boolean setDeleted,
-            Pageable pageable
-    ) {
-        Page<Long> ids = teamCompRepository.filterTeamCompIdsCms(
-                setId, keyword, styles, championId, deleted, setDeleted, pageable
-        );
+    public Page<TeamCompResponse> filterTeamCompsCms(TeamCompFilter filter, Pageable pageable) {
+        Page<Long> pagedIds = teamCompRepository.filterTeamCompIdsCms(filter, pageable);
 
-        if (ids.isEmpty()) {
+        return mapToPageResponsePreserveOrder(pagedIds, pageable);
+    }
+
+    private Page<TeamCompResponse> mapToPageResponsePreserveOrder(Page<Long> pagedIds, Pageable pageable) {
+        if (pagedIds.isEmpty()) {
             return Page.empty(pageable);
         }
 
-        List<Long> orderedIds = ids.getContent();
+        List<Long> orderedIds = pagedIds.getContent();
 
         List<TeamComp> teamComps = teamCompRepository.findAllByIdIn(orderedIds);
-
 
         Map<Long, TeamComp> map = teamComps.stream()
                 .collect(Collectors.toMap(TeamComp::getId, t -> t));
@@ -216,8 +248,7 @@ public class TeamCompServiceImpl implements TeamCompService {
                 .filter(Objects::nonNull)
                 .map(teamCompMapper::toResponse)
                 .toList();
-        return new PageImpl<>(responses, pageable, ids.getTotalElements());
+
+        return new PageImpl<>(responses, pageable, pagedIds.getTotalElements());
     }
-
-
 }

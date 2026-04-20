@@ -156,5 +156,8 @@ public final class Constants {
         public static final String UPLOAD_URL_INVALID = "upload.url.invalid";
         public static final String UPLOAD_FILE_NOT_FOUND = "upload.file.not.found";
         public static final String UPLOAD_DELETE_FAILED = "upload.delete.failed";
+
+        //teamcomp
+        public static final String ENTITY_TEAMS_STATE_LOCK = "entity.teams.state.lock";
     }
 }

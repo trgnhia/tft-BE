@@ -1,7 +1,9 @@
 package org.example.configuration;
 
 import lombok.RequiredArgsConstructor;
-import org.example.core.logging.interceptor.JwtChannelInterceptor;
+import org.example.core.websocket.CookieAuthHandshakeInterceptor;
+import org.example.core.websocket.JwtChannelInterceptor;
+import org.example.core.websocket.StompPrincipalHandshakeHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -14,7 +16,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private final CookieAuthHandshakeInterceptor cookieAuthHandshakeInterceptor;
     private final JwtChannelInterceptor jwtChannelInterceptor;
+    private final StompPrincipalHandshakeHandler stompPrincipalHandshakeHandler;
     /**
      * Cấu hình broker và routing cho WebSocket.
      * /app   : client gửi message lên server để @MessageMapping xử lý
@@ -37,13 +41,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+//        registry.addEndpoint("/ws")
+//                .setAllowedOriginPatterns("*");
+//        // .withSockJS();
+
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*");
-        // .withSockJS();
+                .setAllowedOriginPatterns("*")
+                .addInterceptors(cookieAuthHandshakeInterceptor)
+                .setHandshakeHandler(stompPrincipalHandshakeHandler);
     }
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(jwtChannelInterceptor);
     }
+
+
 }
