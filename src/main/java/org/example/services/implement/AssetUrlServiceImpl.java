@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
+
 @Service
 public class AssetUrlServiceImpl implements AssetUrlService {
 
@@ -31,7 +33,9 @@ public class AssetUrlServiceImpl implements AssetUrlService {
         if (!StringUtils.hasText(baseUrl)) {
             return path;
         }
-        return baseUrl + path;
+
+        String normalizedPath = normalizePathAgainstBase(path, baseUrl);
+        return baseUrl + normalizedPath;
     }
 
     private String resolveBaseUrl() {
@@ -48,5 +52,27 @@ public class AssetUrlServiceImpl implements AssetUrlService {
         }
         String normalized = value.trim();
         return normalized.endsWith("/") ? normalized.substring(0, normalized.length() - 1) : normalized;
+    }
+
+    private String normalizePathAgainstBase(String path, String baseUrl) {
+        try {
+            URI baseUri = URI.create(baseUrl);
+            String contextPath = baseUri.getPath();
+            if (!StringUtils.hasText(contextPath) || "/".equals(contextPath)) {
+                return path;
+            }
+
+            String normalizedContextPath = contextPath.endsWith("/")
+                    ? contextPath.substring(0, contextPath.length() - 1)
+                    : contextPath;
+            String contextPrefix = normalizedContextPath + "/";
+
+            if (path.startsWith(contextPrefix)) {
+                return path.substring(normalizedContextPath.length());
+            }
+            return path;
+        } catch (IllegalArgumentException exception) {
+            return path;
+        }
     }
 }

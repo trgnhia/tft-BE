@@ -384,8 +384,17 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                 .toList();
         ensureNoDuplicateTraitIds(normalizedIds);
 
-        if (normalizedIds.isEmpty()) {
-            champTraitRepository.deleteByChamp_Id(champ.getId());
+        Set<Long> requestedTraitIds = new HashSet<>(normalizedIds);
+
+        List<ChampTrait> existingLinks = champTraitRepository.findByChamp_Id(champ.getId());
+        Set<Long> existingTraitIds = existingLinks.stream()
+                .map(link -> link.getTrait().getId())
+                .collect(Collectors.toSet());
+
+        if (requestedTraitIds.isEmpty()) {
+            if (!existingLinks.isEmpty()) {
+                champTraitRepository.deleteAllInBatch(existingLinks);
+            }
             champ.setChampTraits(new ArrayList<>());
             return;
         }
@@ -394,12 +403,26 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         ensureAllTraitsExist(normalizedIds, traits);
         ensureTraitsBelongToSet(targetSetId, traits);
 
-        champTraitRepository.deleteByChamp_Id(champ.getId());
-        List<ChampTrait> newChampTraits = traits.stream()
-                .map(trait -> ChampTrait.builder().champ(champ).trait(trait).build())
+        List<ChampTrait> linksToDelete = existingLinks.stream()
+                .filter(link -> !requestedTraitIds.contains(link.getTrait().getId()))
                 .toList();
-        champTraitRepository.saveAll(newChampTraits);
-        champ.setChampTraits(new ArrayList<>(newChampTraits));
+        if (!linksToDelete.isEmpty()) {
+            champTraitRepository.deleteAllInBatch(linksToDelete);
+        }
+
+        List<ChampTrait> linksToAdd = traits.stream()
+                .filter(trait -> !existingTraitIds.contains(trait.getId()))
+                .map(trait -> ChampTrait.builder()
+                        .champ(champ)
+                        .trait(trait)
+                        .build())
+                .toList();
+        if (!linksToAdd.isEmpty()) {
+            champTraitRepository.saveAll(linksToAdd);
+        }
+
+        List<ChampTrait> updatedLinks = champTraitRepository.findByChamp_Id(champ.getId());
+        champ.setChampTraits(new ArrayList<>(updatedLinks));
     }
 
     private void ensureNoDuplicateTraitIds(List<Long> traitIds) {
