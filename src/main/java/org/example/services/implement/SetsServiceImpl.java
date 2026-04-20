@@ -2,14 +2,18 @@ package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
 import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
+import org.example.common.enums.NotificationTargetType;
+import org.example.common.enums.NotificationType;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
+import org.example.dto.notification.NotificationCreateCommand;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.entities.Sets;
 import org.example.mapper.SetsMapper;
 import org.example.repositories.SetsRepository;
+import org.example.services.NotificationService;
 import org.example.services.SetsService;
 import org.example.util.MessageUtils;
 import org.springframework.data.domain.Page;
@@ -27,6 +31,7 @@ public class SetsServiceImpl implements SetsService {
 
     private final SetsRepository setRepo;
     private final SetsMapper setsMapper;
+    private final NotificationService notificationService;
 
     // ---------- PUBLIC SERVICES ----------
     @Override
@@ -67,6 +72,17 @@ public class SetsServiceImpl implements SetsService {
         Sets sets = setsMapper.toEntity(request);
         sets.setName(normalizedName);
         Sets savedSets = setRepo.save(sets);
+
+        notificationService.createAndBroadcast(
+                NotificationCreateCommand.builder()
+                        .type(NotificationType.SET_CREATED)
+                        .title("Tạo mùa giải mới")
+                        .content("Set " + savedSets.getName() + " vừa được tạo")
+                        .targetType(NotificationTargetType.SETS)
+                        .targetId(savedSets.getId())
+                        .createdBy(1L)
+                        .build()
+        );
         return setsMapper.toSetsResponse(savedSets);
     }
 

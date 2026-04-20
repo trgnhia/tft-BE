@@ -1,4 +1,4 @@
-package org.example.core.logging.interceptor;
+package org.example.core.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
+import java.security.Principal;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -28,65 +30,88 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
      *
      * Đây là nơi mọi STOMP frame đi qua
      */
+//    @Override
+//    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+//        // Lấy STOMP header accessor
+//        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+//        if (accessor == null) {
+//            return message;
+//        }
+//
+//        // Chỉ xử lý tại thời điểm CONNECT
+//        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+//
+//            // Lấy header Authorization từ STOMP CONNECT
+//            String authHeader = accessor.getFirstNativeHeader("Authorization");
+//
+//            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+//                throw new ServerException(ErrorCode.ACCESS_DENIED);
+//            }
+//
+//            String token = authHeader.substring(7);
+//
+//            // Validate JWT
+//            if (!jwtUtil.isValidToken(token)) {
+//                throw new ServerException(ErrorCode.ACCESS_DENIED);
+//            }
+//
+//            // Lấy username từ token
+//            String username = jwtUtil.getUsernameFromToken(token);
+//
+//            // Load user từ DB (qua UserDetailsService)
+//            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+//
+//            // Cast về SecurityUser
+//            SecurityUser securityUser = (SecurityUser) userDetails;
+//
+//            // Tạo Authentication object
+//            UsernamePasswordAuthenticationToken authentication =
+//                    new UsernamePasswordAuthenticationToken(
+//                            securityUser,
+//                            null,
+//                            securityUser.getAuthorities()
+//                    ) {
+//                        @Override
+//                        public String getName() {
+//                            return String.valueOf(securityUser.getId());
+//                        }
+//                    };
+//
+//            /**
+//             * tham số : java.security.Principal
+//             * UsernamePasswordAuthenticationToken implements Authentication
+//             * Authentication extends Principal
+//             * Spring dùng principal.getName() để map toi /user/{principalName}/queue/messages
+//             */
+//            accessor.setUser(authentication);
+//
+//            // set Principal cho WebSocket session
+//            accessor.setUser(authentication);
+//        }
+//
+//        return message;
+//    }
+//
+//
+
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        // Lấy STOMP header accessor
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+
         if (accessor == null) {
             return message;
         }
 
-        // Chỉ xử lý tại thời điểm CONNECT
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            Principal principal = accessor.getUser();
 
-            // Lấy header Authorization từ STOMP CONNECT
-            String authHeader = accessor.getFirstNativeHeader("Authorization");
-
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            if (principal == null) {
+                log.warn("STOMP CONNECT rejected: no authenticated principal in websocket session");
                 throw new ServerException(ErrorCode.ACCESS_DENIED);
             }
 
-            String token = authHeader.substring(7);
-
-            // Validate JWT
-            if (!jwtUtil.isValidToken(token)) {
-                throw new ServerException(ErrorCode.ACCESS_DENIED);
-            }
-
-            // Lấy username từ token
-            String username = jwtUtil.getUsernameFromToken(token);
-
-            // Load user từ DB (qua UserDetailsService)
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            // Cast về SecurityUser
-            SecurityUser securityUser = (SecurityUser) userDetails;
-
-            // Tạo Authentication object
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            securityUser,
-                            null,
-                            securityUser.getAuthorities()
-                    ) {
-                        @Override
-                        public String getName() {
-                            return String.valueOf(securityUser.getId());
-                        }
-                    };
-
-            /**
-             * tham số : java.security.Principal
-             * UsernamePasswordAuthenticationToken implements Authentication
-             * Authentication extends Principal
-             * Spring dùng principal.getName() để map toi /user/{principalName}/queue/messages
-             */
-            accessor.setUser(authentication);
-
-            // set Principal cho WebSocket session
-            accessor.setUser(authentication);
+            log.info("STOMP CONNECT accepted for userId={}", principal.getName());
         }
-
         return message;
     }
 }
