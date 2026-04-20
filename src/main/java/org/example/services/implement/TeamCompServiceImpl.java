@@ -69,7 +69,7 @@ public class TeamCompServiceImpl implements TeamCompService {
                 tcc.setTeamComp(savedTeamComp);
                 tcc.setChamp(champ);
                 return tcc;
-            }).toList();
+            }).collect(Collectors.toCollection(ArrayList::new));
 
             savedTeamComp.setTeamCompChamps(joinList);
             TeamComp finalTeamComp = teamCompRepository.save(savedTeamComp);
