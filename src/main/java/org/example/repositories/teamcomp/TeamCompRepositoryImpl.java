@@ -73,7 +73,6 @@ public class TeamCompRepositoryImpl implements TeamCompRepositoryCustom {
         }
 
         if (filter.getSetDeleted() != null) {
-            // ĐÃ FIX: Escape chữ `set` thành từ khóa an toàn (dùng backtick cho MySQL)
             String joinSet = " LEFT JOIN \"set\" s ON tc.set_id = s.id ";
             sql.append(joinSet);
             countSql.append(joinSet);

@@ -150,13 +150,14 @@ public class TeamCompServiceImpl implements TeamCompService {
                         "id ", String.valueOf(id)));
 
         if (teamComp.getSets()!= null && Boolean.TRUE.equals(teamComp.getSets().isDeleted())) {
-            throw new ConflictException("Không thể khôi phục vì mùa đã bị vô hiệu hóa");
+            throw new ConflictException(
+                    MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS_STATE_LOCK)
+            );
         }
 
         if (teamComp.isDeleted()) {
             teamComp.setDeleted(false);
             teamCompRepository.save(teamComp);
-            log.info("Restored teamComp id={}", id);
         }
     }
 
@@ -175,14 +176,15 @@ public class TeamCompServiceImpl implements TeamCompService {
 
         for (TeamComp tc : teamComps) {
             if (tc.getSets() != null && Boolean.TRUE.equals(tc.getSets().isDeleted())) {
-                throw new ConflictException("Một số đội hình không thể khôi phục vì mùa đã bị vô hiệu hóa");
+                throw new ConflictException(
+                        MessageUtils.getMessage(Constants.MessageKey.ENTITY_TEAMS_STATE_LOCK)
+                );
             }
         }
 
         teamComps.forEach(tc -> {
             if (tc.isDeleted()) {
                 tc.setDeleted(false);
-                log.info("Restored teamComp id={}", tc.getId());
             }
         });
 
