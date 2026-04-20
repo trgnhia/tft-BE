@@ -76,9 +76,10 @@ public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecific
     @Query("""
             SELECT t FROM Trait t
             WHERE t.deleted = false
+              AND (:setId IS NULL OR t.sets.id = :setId)
             ORDER BY t.name ASC
             """)
-    List<Trait> findAllActiveForDropdown();
+    List<Trait> findAllActiveForDropdown(@Param("setId") Long setId);
 
     @Query(value = """
     SELECT * FROM traits t

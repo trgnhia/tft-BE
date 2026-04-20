@@ -48,4 +48,10 @@ public interface ChampRepository extends JpaRepository<Champ, Long>, JpaSpecific
 
     @EntityGraph(attributePaths = {"champTraits", "champTraits.trait"})
     List<Champ> findBySetsId(Long setId);
+
+    @EntityGraph(attributePaths = {"champTraits", "champTraits.trait"})
+    List<Champ> findAllByDeletedFalseOrderByNameAsc();
+
+    @EntityGraph(attributePaths = {"champTraits", "champTraits.trait"})
+    List<Champ> findAllBySetsIdAndDeletedFalseOrderByNameAsc(Long setId);
 }

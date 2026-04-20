@@ -135,5 +135,20 @@ public final class Constants {
         public static final String IMPORT_COLUMN_REQUIRED = "import.column.required";
         public static final String IMPORT_COLUMN_INVALID_VALUE = "import.column.invalid.value";
         public static final String IMPORT_PERSIST_GENERIC_ERROR = "import.persist.generic.error";
+
+        // upload messages
+        public static final String UPLOAD_FILE_REQUIRED = "upload.file.required";
+        public static final String UPLOAD_IMAGE_SIZE_EXCEEDED = "upload.image.size.exceeded";
+        public static final String UPLOAD_IMAGE_INVALID_TYPE = "upload.image.invalid.type";
+        public static final String UPLOAD_IMAGE_EXTENSION_UNSUPPORTED = "upload.image.extension.unsupported";
+        public static final String UPLOAD_ORIGINAL_FILENAME_MISSING = "upload.original.filename.missing";
+        public static final String UPLOAD_FILE_EXTENSION_MISSING = "upload.file.extension.missing";
+        public static final String UPLOAD_FOLDER_REQUIRED = "upload.folder.required";
+        public static final String UPLOAD_INVALID_PATH = "upload.invalid.path";
+        public static final String UPLOAD_STORE_FAILED = "upload.store.failed";
+        public static final String UPLOAD_URL_REQUIRED = "upload.url.required";
+        public static final String UPLOAD_URL_INVALID = "upload.url.invalid";
+        public static final String UPLOAD_FILE_NOT_FOUND = "upload.file.not.found";
+        public static final String UPLOAD_DELETE_FAILED = "upload.delete.failed";
     }
 }

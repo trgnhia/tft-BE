@@ -20,14 +20,17 @@ import org.example.repositories.ChampTraitRepository;
 import org.example.repositories.spec.ChampSpecification;
 import org.example.repositories.SetsRepository;
 import org.example.repositories.TraitRepository;
+import org.example.services.AssetUrlService;
 import org.example.services.BaseService;
 import org.example.services.ChampService;
+import org.example.services.FileStorageService;
 import org.example.util.FilterUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -49,6 +52,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     private final ChampTraitRepository champTraitRepository;
     private final TraitRepository traitRepository;
     private final FilterUtil filterUtil;
+    private final FileStorageService fileStorageService;
+    private final AssetUrlService assetUrlService;
 
     @Override
     public PageResponse<ChampResponse> getAll(String keyword, Pageable pageable) {
@@ -57,7 +62,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         Page<Champ> page = (keyword != null && !keyword.isBlank())
                 ? champRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable)
                 : champRepository.findAll(pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
     @Override
@@ -65,7 +70,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP] Fetching champ by id: {}", id);
         filterUtil.enableDeletedFilter();
         return champRepository.findById(id)
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
@@ -77,7 +82,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP] Fetching champ by slug: {}", slug);
         filterUtil.enableDeletedFilter();
         return champRepository.findBySlug(slug)
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
@@ -92,7 +97,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filter.setDeleted(null);
         Specification<Champ> spec = ChampSpecification.withFilter(filter);
         Page<Champ> page = champRepository.findAll(spec, pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
     @Override
@@ -101,13 +106,26 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filterUtil.enableDeletedFilter();
         return champRepository.findBySetsId(setId)
                 .stream()
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ChampResponse> getAllSortedByNameAsc(Long setId) {
+        log.info("[CHAMP] getAllSortedByNameAsc setId={}", setId);
+        filterUtil.enableDeletedFilter();
+        List<Champ> champs = setId == null
+                ? champRepository.findAllByDeletedFalseOrderByNameAsc()
+                : champRepository.findAllBySetsIdAndDeletedFalseOrderByNameAsc(setId);
+        return champs.stream()
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
     @Transactional
     public ChampResponse create(CreateChampRequest request) {
+        filterUtil.enableDeletedFilter();
         if (champRepository.existsBySlug(request.getSlug())) {
             throw new ConflictException(Constants.MessageKey.CHAMP_SLUG_EXISTS, request.getSlug());
         }
@@ -124,9 +142,10 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         champ.setSets(sets);
 
         Champ savedChamp = champRepository.save(champ);
+        syncChampTraits(savedChamp, request.getSetId(), request.getTraitIds());
         log.info("[CHAMP] Created id={} slug={} by user={}",
                 savedChamp.getId(), savedChamp.getSlug(), getCurrentUserNameOrThrow());
-        return champMapper.toResponse(savedChamp);
+        return toResponse(savedChamp);
     }
 
     @Override
@@ -147,6 +166,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
             throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
         }
 
+        String oldImageUrl = champ.getImageUrl();
+
         Long targetSetId = resolveTargetSetId(request, champ);
         if (!Objects.equals(targetSetId, champ.getSets().getId())) {
             Sets targetSet = getOrThrowSet(targetSetId);
@@ -155,9 +176,10 @@ public class ChampServiceImpl extends BaseService implements ChampService {
 
         champMapper.updateEntity(request, champ);
         syncChampTraits(champ, targetSetId, request.getTraitIds());
+        deleteObsoleteManagedImage(oldImageUrl, champ.getImageUrl());
 
         log.info("[CHAMP] Updated successfully id={} by user={}", id, getCurrentUserNameOrThrow());
-        return champMapper.toResponse(champ);
+        return toResponse(champ);
     }
 
     @Override
@@ -207,7 +229,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         Page<Champ> page = (keyword != null && !keyword.isBlank())
                 ? champRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable)
                 : champRepository.findAll(pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
     @Override
@@ -215,7 +237,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP-ADMIN] Fetching champ id: {} including deleted", id);
         filterUtil.disableDeletedFilter();
         return champRepository.findById(id)
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
@@ -248,7 +270,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filterUtil.disableDeletedFilter();
         Specification<Champ> spec = ChampSpecification.withFilter(filter);
         Page<Champ> page = champRepository.findAll(spec, pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
 
@@ -367,6 +389,19 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                     new Object[]{"traitIds " + mismatchedTraitIds + " do not belong to setId " + setId}
             );
         }
+    }
+
+    private void deleteObsoleteManagedImage(String oldImageUrl, String newImageUrl) {
+        if (Objects.equals(oldImageUrl, newImageUrl) || !StringUtils.hasText(oldImageUrl)) {
+            return;
+        }
+        fileStorageService.deleteManagedImageIfExists(oldImageUrl);
+    }
+
+    private ChampResponse toResponse(Champ champ) {
+        ChampResponse response = champMapper.toResponse(champ);
+        response.setImageUrl(assetUrlService.toPublicUrl(response.getImageUrl()));
+        return response;
     }
 
 }

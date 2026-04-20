@@ -14,6 +14,7 @@ public interface ChampService {
 
     PageResponse<ChampResponse> search(ChampFilterRequest filter, Pageable pageable);
     List<ChampResponse> getBySetId(Long setId); // dung cho dropdown
+    List<ChampResponse> getAllSortedByNameAsc(Long setId);
 
     // editor
     ChampResponse create(CreateChampRequest request);
