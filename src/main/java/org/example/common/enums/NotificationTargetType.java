@@ -5,5 +5,6 @@ public enum NotificationTargetType {
     ITEM,
     SETS,
     TRAIT,
-    TEAM_COMP
+    TEAM_COMP,
+    SYSTEM
 }
