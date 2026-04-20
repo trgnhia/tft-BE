@@ -141,5 +141,8 @@ public final class Constants {
         public static final String IMPORT_COLUMN_REQUIRED = "import.column.required";
         public static final String IMPORT_COLUMN_INVALID_VALUE = "import.column.invalid.value";
         public static final String IMPORT_PERSIST_GENERIC_ERROR = "import.persist.generic.error";
+
+        //teamcomp
+        public static final String ENTITY_TEAMS_STATE_LOCK = "entity.teams.state.lock";
     }
 }
