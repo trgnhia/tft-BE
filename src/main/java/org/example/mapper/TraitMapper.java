@@ -37,6 +37,8 @@ public interface TraitMapper {
     void updateEntity(UpdateTraitRequest request, @MappingTarget Trait trait);
 
     @Mapping(target = "setId", source = "sets.id")
+    @Mapping(target = "setName", source = "sets.name")
+    @Mapping(target = "setDeleted", source = "sets.deleted")
     TraitResponse toResponse(Trait trait);
 
     List<TraitBreakpoint> toBreakpointEntityList(List<TraitBreakPointRequest> list);

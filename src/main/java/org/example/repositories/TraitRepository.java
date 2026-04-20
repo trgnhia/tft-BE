@@ -44,6 +44,9 @@ public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecific
     @Query(value = "SELECT * FROM traits WHERE id = :id", nativeQuery = true)
     Optional<Trait> findByIdAdmin(@Param("id") Long id);
 
+    @Query(value = "SELECT * FROM traits WHERE id IN (:ids)", nativeQuery = true)
+    List<Trait> findAllByIdsAdmin(@Param("ids") List<Long> ids);
+
     @Query("""
             SELECT t FROM Trait t
             WHERE t.id IN :ids
