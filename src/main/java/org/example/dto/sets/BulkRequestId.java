@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class BulkRequestDelete {
+public class BulkRequestId {
     @NotEmpty(message = "{common.ids.not.empty}")
     private List<Long> ids;
 }

@@ -2,8 +2,10 @@ package org.example.services.implement;
 
 import lombok.RequiredArgsConstructor;
 import org.example.common.enums.ErrorCode;
+import org.example.common.enums.RoleCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
+import org.example.common.exception.ServerException;
 import org.example.dto.role.CreateRoleRequest;
 import org.example.dto.role.RoleDto;
 import org.example.dto.role.UpdateRolePermissionRequest;
@@ -14,14 +16,9 @@ import org.example.mapper.RoleMapper;
 import org.example.repositories.PermissionRepository;
 import org.example.repositories.RoleRepository;
 import org.example.services.RoleService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,6 +44,7 @@ public class RoleServiceImpl implements RoleService {
     public RoleDto updateRolePermissions(Long id, UpdateRolePermissionRequest request) {
         Role role = getRoleWithPermissionOrThrow(id);
 
+        if (role.getCode().equals(RoleCode.ADMIN.toString())) throw new ServerException(ErrorCode.UPDATE_ADMIN_ROLE);
 
         List<Permission> foundPermissions = new ArrayList<>(permissionRepository.findAllById(request.permissionIds()));
         validatePermissions(foundPermissions, request.permissionIds());
@@ -60,19 +58,26 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public RoleDto deleteRole(Long id) {
         Role role = getRoleWithPermissionOrThrow(id);
+        if (Arrays.stream(RoleCode.values()).anyMatch(roleCode -> roleCode.toString().equals(role.getCode()))) {
+            throw new ServerException(ErrorCode.DELETE_BASIC_ROLE);
+        }
         role.setDeleted(true);
         Role saved = roleRepository.save(role);
         return roleMapper.toDto(saved);
     }
 
     @Override
-    public Page<RoleDto> getAll(String keyword, Pageable pageable) {
+    public List<RoleDto> getAll(String keyword) {
         if (keyword == null || keyword.trim().isBlank()) {
-            return roleRepository.findAllNonDelete(pageable)
-                    .map(roleMapper::toDto);
+            return roleRepository.findAll()
+                    .stream()
+                    .map(roleMapper::toDto)
+                    .toList();
         }
-        return roleRepository.findAllNonDeleteWithKeyword(keyword.toUpperCase(), pageable)
-                .map(roleMapper::toDto);
+        return roleRepository.findAllWithKeyword(keyword.toUpperCase())
+                .stream()
+                .map(roleMapper::toDto)
+                .toList();
     }
 
     @Override
