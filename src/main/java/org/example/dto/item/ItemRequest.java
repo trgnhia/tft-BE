@@ -26,5 +26,7 @@ public class ItemRequest {
     private ItemEffects effects;
     @NotBlank(message = "{tier.name.not_blank}")
     @Size(max = 10, message = "{tier.name.size}")
+    private String tier;
     private boolean deleted;
+
 }
