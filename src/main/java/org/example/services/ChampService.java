@@ -34,7 +34,7 @@ public interface ChampService {
     PageResponse<ChampResponse> searchAdmin(ChampFilterRequest filter, Pageable pageable);
 
     /** Restore nhiều champ cùng lúc */
-    void bulkRestore(BulkDeleteRequest request);
+    BulkRestoreChampResponse bulkRestore(BulkDeleteRequest request);
 
     /** Thống kê tổng quan */
     ChampOverviewStatsResponse getStats();

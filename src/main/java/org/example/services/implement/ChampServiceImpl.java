@@ -17,6 +17,7 @@ import org.example.mapper.ChampsMapper;
 import org.example.repositories.ChampItemRecommendRepository;
 import org.example.repositories.ChampRepository;
 import org.example.repositories.ChampTraitRepository;
+import org.example.repositories.projection.ChampRestoreCandidate;
 import org.example.repositories.spec.ChampSpecification;
 import org.example.repositories.SetsRepository;
 import org.example.repositories.TraitRepository;
@@ -260,6 +261,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                     new Object[]{Constants.MessageKey.ENTITY_CHAMP});
         }
 
+        validateParentSetCanRestore(champ.getSets());
+
         champ.setDeleted(false);
         log.info("[CHAMP-ADMIN] Restored successfully id={} by user={}", id, getCurrentUserNameOrThrow());
     }
@@ -276,18 +279,61 @@ public class ChampServiceImpl extends BaseService implements ChampService {
 
     @Override
     @Transactional
-    public void bulkRestore(BulkDeleteRequest request) {
+    public BulkRestoreChampResponse bulkRestore(BulkDeleteRequest request) {
         log.info("[CHAMP-ADMIN] bulkRestore ids={}", request.getIds());
         filterUtil.disableDeletedFilter();
-        List<Champ> champs = champRepository.findAllById(request.getIds());
-        champs.forEach(c -> {
-            if (!c.isDeleted()) {
-                throw new DataException(ErrorCode.INVALID_PARAMETER,
-                        new Object[]{Constants.MessageKey.ENTITY_CHAMP});
+        if (request.getIds() == null || request.getIds().isEmpty()) {
+            return BulkRestoreChampResponse.builder().build();
+        }
+
+        List<Long> requestedIds = request.getIds().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (requestedIds.isEmpty()) {
+            return BulkRestoreChampResponse.builder().build();
+        }
+
+        List<ChampRestoreCandidate> candidates = champRepository.findRestoreCandidatesByIds(requestedIds);
+        Set<Long> foundIds = candidates.stream()
+                .map(ChampRestoreCandidate::getChampId)
+                .collect(Collectors.toSet());
+
+        List<Long> restorableIds = new ArrayList<>();
+        List<Long> restoredIds = new ArrayList<>();
+        List<BulkRestoreChampFailedItem> failedItems = new ArrayList<>();
+
+        for (ChampRestoreCandidate candidate : candidates) {
+            if (candidate.getSetId() == null) {
+                failedItems.add(failedItem(candidate.getChampId(), "parent_set_not_found"));
+                continue;
             }
-            c.setDeleted(false);
-        });
-        log.info("[CHAMP-ADMIN] bulkRestored count={} by user={}", champs.size(), getCurrentUserNameOrThrow());
+
+            if (Boolean.TRUE.equals(candidate.getSetDeleted())) {
+                failedItems.add(failedItem(candidate.getChampId(), "parent_set_deleted"));
+                continue;
+            }
+
+            restorableIds.add(candidate.getChampId());
+            restoredIds.add(candidate.getChampId());
+        }
+
+        requestedIds.stream()
+                .filter(id -> !foundIds.contains(id))
+                .forEach(id -> failedItems.add(failedItem(id, "champ_not_found")));
+
+        if (!restorableIds.isEmpty()) {
+            champRepository.bulkRestoreByIds(restorableIds);
+        }
+
+        log.info("[CHAMP-ADMIN] bulkRestore completed restored={} failed={} by user={}",
+                restoredIds.size(), failedItems.size(), getCurrentUserNameOrThrow());
+
+        return BulkRestoreChampResponse.builder()
+                .restored(restoredIds)
+                .failed(failedItems)
+                .build();
     }
 
     @Override
@@ -402,6 +448,22 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         ChampResponse response = champMapper.toResponse(champ);
         response.setImageUrl(assetUrlService.toPublicUrl(response.getImageUrl()));
         return response;
+    }
+
+    private void validateParentSetCanRestore(Sets parentSet) {
+        if (parentSet == null) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{"parent_set_not_found"});
+        }
+        if (parentSet.isDeleted()) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{"parent_set_deleted"});
+        }
+    }
+
+    private BulkRestoreChampFailedItem failedItem(Long champId, String reason) {
+        return BulkRestoreChampFailedItem.builder()
+                .champId(champId)
+                .reason(reason)
+                .build();
     }
 
 }

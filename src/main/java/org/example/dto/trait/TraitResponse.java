@@ -14,6 +14,7 @@ import java.util.List;
 public class TraitResponse {
     private Long id;
     private Long setId;
+    private Boolean deleted;
     private String slug;
     private String name;
     private String type;

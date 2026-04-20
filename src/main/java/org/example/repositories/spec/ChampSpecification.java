@@ -38,11 +38,21 @@ public class ChampSpecification {
             if (filter.getTrait() != null && !filter.getTrait().isBlank()) {
                 Join<Champ, ChampTrait> champTraitJoin = root.join("champTraits", JoinType.LEFT);
                 Join<ChampTrait, Trait> traitJoin = champTraitJoin.join("trait", JoinType.LEFT);
-                String normalizedTrait = "%" + filter.getTrait().trim().toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(traitJoin.get("name")), normalizedTrait),
-                        cb.like(cb.lower(traitJoin.get("slug")), normalizedTrait)
-                ));
+                List<Predicate> traitPredicates = new ArrayList<>();
+                String[] traitTerms = filter.getTrait().split(",");
+                for (String traitTerm : traitTerms) {
+                    if (traitTerm == null || traitTerm.isBlank()) {
+                        continue;
+                    }
+                    String normalizedTrait = "%" + traitTerm.trim().toLowerCase() + "%";
+                    traitPredicates.add(cb.or(
+                            cb.like(cb.lower(traitJoin.get("name")), normalizedTrait),
+                            cb.like(cb.lower(traitJoin.get("slug")), normalizedTrait)
+                    ));
+                }
+                if (!traitPredicates.isEmpty()) {
+                    predicates.add(cb.or(traitPredicates.toArray(new Predicate[0])));
+                }
                 predicates.add(cb.equal(traitJoin.get("sets").get("id"), root.get("sets").get("id")));
             }
             if (filter.getDeleted() != null) {

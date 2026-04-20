@@ -131,10 +131,9 @@ public class ChampCmsController {
 
     @PatchMapping("/admin/bulk/restore")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<Void> bulkRestore(@RequestBody @Valid BulkDeleteRequest request) {
+    public ApiResponse<BulkRestoreChampResponse> bulkRestore(@RequestBody @Valid BulkDeleteRequest request) {
         log.info("REST ADMIN bulkRestore champs ids={}", request.getIds());
-        champService.bulkRestore(request);
-        return ApiResponse.success(null);
+        return ApiResponse.success(champService.bulkRestore(request));
     }
 
     @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
