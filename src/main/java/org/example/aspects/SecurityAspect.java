@@ -4,6 +4,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.example.annotations.RequirePermission;
+import org.example.common.enums.RoleCode;
 import org.example.security.SecurityUser;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -18,6 +19,9 @@ public class SecurityAspect {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof SecurityUser securityUser)) {
             throw new AccessDeniedException("Unauthorized");
+        }
+        if (securityUser.getRoleCode().equals(RoleCode.ADMIN.toString())) {
+            return;
         }
         String requiredAuthority = String.format("%s_%s",
                 requirePermission.resource(),

@@ -6,12 +6,11 @@ import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.item.ItemRequest;
 import org.example.dto.item.ItemResponse;
+import org.example.dto.sets.BulkRequestId;
 import org.example.services.ItemService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/cms/items")
@@ -21,22 +20,32 @@ public class ItemCmsController {
 
     private final ItemService itemService;
 
-//    @GetMapping
-//    public ResponseEntity<ApiResponse<List<ItemResponse>>> getAll() {
-//        return ResponseEntity.ok(
-//                ApiResponse.success(itemService.getAllItem())
-//        );
-//    }
-
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long setId
+            @RequestParam(required = false) Long setId,
+            @RequestParam(required = false) Boolean setDeleted,
+            @RequestParam(required = false) Boolean itemDeleted,
+            @RequestParam(required = false) String tier,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(itemService.getItemsForCms(page, size, keyword, setId))
+                ApiResponse.success(
+                        itemService.getItemsForCms(
+                                page,
+                                size,
+                                keyword,
+                                setId,
+                                setDeleted,
+                                itemDeleted,
+                                tier,
+                                sortBy,
+                                sortDir
+                        )
+                )
         );
     }
 
@@ -59,6 +68,23 @@ public class ItemCmsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         itemService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteMany(@Valid @RequestBody BulkRequestId request) {
+        itemService.deleteMany(request.getIds());
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<ItemResponse>> restore(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(itemService.restore(id)));
+    }
+
+    @PatchMapping("/restore")
+    public ResponseEntity<ApiResponse<Void>> restoreMany(@Valid @RequestBody BulkRequestId request) {
+        itemService.restoreMany(request.getIds());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
