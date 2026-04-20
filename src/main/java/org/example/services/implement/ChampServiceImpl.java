@@ -17,17 +17,21 @@ import org.example.mapper.ChampsMapper;
 import org.example.repositories.ChampItemRecommendRepository;
 import org.example.repositories.ChampRepository;
 import org.example.repositories.ChampTraitRepository;
+import org.example.repositories.projection.ChampRestoreCandidate;
 import org.example.repositories.spec.ChampSpecification;
 import org.example.repositories.SetsRepository;
 import org.example.repositories.TraitRepository;
+import org.example.services.AssetUrlService;
 import org.example.services.BaseService;
 import org.example.services.ChampService;
+import org.example.services.FileStorageService;
 import org.example.util.FilterUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -49,6 +53,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     private final ChampTraitRepository champTraitRepository;
     private final TraitRepository traitRepository;
     private final FilterUtil filterUtil;
+    private final FileStorageService fileStorageService;
+    private final AssetUrlService assetUrlService;
 
     @Override
     public PageResponse<ChampResponse> getAll(String keyword, Pageable pageable) {
@@ -57,7 +63,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         Page<Champ> page = (keyword != null && !keyword.isBlank())
                 ? champRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable)
                 : champRepository.findAll(pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
     @Override
@@ -65,7 +71,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP] Fetching champ by id: {}", id);
         filterUtil.enableDeletedFilter();
         return champRepository.findById(id)
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
@@ -77,7 +83,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP] Fetching champ by slug: {}", slug);
         filterUtil.enableDeletedFilter();
         return champRepository.findBySlug(slug)
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
@@ -92,7 +98,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filter.setDeleted(null);
         Specification<Champ> spec = ChampSpecification.withFilter(filter);
         Page<Champ> page = champRepository.findAll(spec, pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
     @Override
@@ -101,13 +107,26 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filterUtil.enableDeletedFilter();
         return champRepository.findBySetsId(setId)
                 .stream()
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ChampResponse> getAllSortedByNameAsc(Long setId) {
+        log.info("[CHAMP] getAllSortedByNameAsc setId={}", setId);
+        filterUtil.enableDeletedFilter();
+        List<Champ> champs = setId == null
+                ? champRepository.findAllByDeletedFalseOrderByNameAsc()
+                : champRepository.findAllBySetsIdAndDeletedFalseOrderByNameAsc(setId);
+        return champs.stream()
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
     @Transactional
     public ChampResponse create(CreateChampRequest request) {
+        filterUtil.enableDeletedFilter();
         if (champRepository.existsBySlug(request.getSlug())) {
             throw new ConflictException(Constants.MessageKey.CHAMP_SLUG_EXISTS, request.getSlug());
         }
@@ -124,9 +143,10 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         champ.setSets(sets);
 
         Champ savedChamp = champRepository.save(champ);
+        syncChampTraits(savedChamp, request.getSetId(), request.getTraitIds());
         log.info("[CHAMP] Created id={} slug={} by user={}",
                 savedChamp.getId(), savedChamp.getSlug(), getCurrentUserNameOrThrow());
-        return champMapper.toResponse(savedChamp);
+        return toResponse(savedChamp);
     }
 
     @Override
@@ -147,6 +167,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
             throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
         }
 
+        String oldImageUrl = champ.getImageUrl();
+
         Long targetSetId = resolveTargetSetId(request, champ);
         if (!Objects.equals(targetSetId, champ.getSets().getId())) {
             Sets targetSet = getOrThrowSet(targetSetId);
@@ -155,9 +177,10 @@ public class ChampServiceImpl extends BaseService implements ChampService {
 
         champMapper.updateEntity(request, champ);
         syncChampTraits(champ, targetSetId, request.getTraitIds());
+        deleteObsoleteManagedImage(oldImageUrl, champ.getImageUrl());
 
         log.info("[CHAMP] Updated successfully id={} by user={}", id, getCurrentUserNameOrThrow());
-        return champMapper.toResponse(champ);
+        return toResponse(champ);
     }
 
     @Override
@@ -207,7 +230,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         Page<Champ> page = (keyword != null && !keyword.isBlank())
                 ? champRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable)
                 : champRepository.findAll(pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
     @Override
@@ -215,7 +238,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         log.info("[CHAMP-ADMIN] Fetching champ id: {} including deleted", id);
         filterUtil.disableDeletedFilter();
         return champRepository.findById(id)
-                .map(champMapper::toResponse)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         Constants.MessageKey.ERROR_NOT_FOUND,
                         new Object[]{Constants.MessageKey.ENTITY_CHAMP}
@@ -238,6 +261,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                     new Object[]{Constants.MessageKey.ENTITY_CHAMP});
         }
 
+        validateParentSetCanRestore(champ.getSets());
+
         champ.setDeleted(false);
         log.info("[CHAMP-ADMIN] Restored successfully id={} by user={}", id, getCurrentUserNameOrThrow());
     }
@@ -248,24 +273,67 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filterUtil.disableDeletedFilter();
         Specification<Champ> spec = ChampSpecification.withFilter(filter);
         Page<Champ> page = champRepository.findAll(spec, pageable);
-        return PageResponse.from(page.map(champMapper::toResponse));
+        return PageResponse.from(page.map(this::toResponse));
     }
 
 
     @Override
     @Transactional
-    public void bulkRestore(BulkDeleteRequest request) {
+    public BulkRestoreChampResponse bulkRestore(BulkDeleteRequest request) {
         log.info("[CHAMP-ADMIN] bulkRestore ids={}", request.getIds());
         filterUtil.disableDeletedFilter();
-        List<Champ> champs = champRepository.findAllById(request.getIds());
-        champs.forEach(c -> {
-            if (!c.isDeleted()) {
-                throw new DataException(ErrorCode.INVALID_PARAMETER,
-                        new Object[]{Constants.MessageKey.ENTITY_CHAMP});
+        if (request.getIds() == null || request.getIds().isEmpty()) {
+            return BulkRestoreChampResponse.builder().build();
+        }
+
+        List<Long> requestedIds = request.getIds().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (requestedIds.isEmpty()) {
+            return BulkRestoreChampResponse.builder().build();
+        }
+
+        List<ChampRestoreCandidate> candidates = champRepository.findRestoreCandidatesByIds(requestedIds);
+        Set<Long> foundIds = candidates.stream()
+                .map(ChampRestoreCandidate::getChampId)
+                .collect(Collectors.toSet());
+
+        List<Long> restorableIds = new ArrayList<>();
+        List<Long> restoredIds = new ArrayList<>();
+        List<BulkRestoreChampFailedItem> failedItems = new ArrayList<>();
+
+        for (ChampRestoreCandidate candidate : candidates) {
+            if (candidate.getSetId() == null) {
+                failedItems.add(failedItem(candidate.getChampId(), "parent_set_not_found"));
+                continue;
             }
-            c.setDeleted(false);
-        });
-        log.info("[CHAMP-ADMIN] bulkRestored count={} by user={}", champs.size(), getCurrentUserNameOrThrow());
+
+            if (Boolean.TRUE.equals(candidate.getSetDeleted())) {
+                failedItems.add(failedItem(candidate.getChampId(), "parent_set_deleted"));
+                continue;
+            }
+
+            restorableIds.add(candidate.getChampId());
+            restoredIds.add(candidate.getChampId());
+        }
+
+        requestedIds.stream()
+                .filter(id -> !foundIds.contains(id))
+                .forEach(id -> failedItems.add(failedItem(id, "champ_not_found")));
+
+        if (!restorableIds.isEmpty()) {
+            champRepository.bulkRestoreByIds(restorableIds);
+        }
+
+        log.info("[CHAMP-ADMIN] bulkRestore completed restored={} failed={} by user={}",
+                restoredIds.size(), failedItems.size(), getCurrentUserNameOrThrow());
+
+        return BulkRestoreChampResponse.builder()
+                .restored(restoredIds)
+                .failed(failedItems)
+                .build();
     }
 
     @Override
@@ -316,8 +384,17 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                 .toList();
         ensureNoDuplicateTraitIds(normalizedIds);
 
-        if (normalizedIds.isEmpty()) {
-            champTraitRepository.deleteByChamp_Id(champ.getId());
+        Set<Long> requestedTraitIds = new HashSet<>(normalizedIds);
+
+        List<ChampTrait> existingLinks = champTraitRepository.findByChamp_Id(champ.getId());
+        Set<Long> existingTraitIds = existingLinks.stream()
+                .map(link -> link.getTrait().getId())
+                .collect(Collectors.toSet());
+
+        if (requestedTraitIds.isEmpty()) {
+            if (!existingLinks.isEmpty()) {
+                champTraitRepository.deleteAllInBatch(existingLinks);
+            }
             champ.setChampTraits(new ArrayList<>());
             return;
         }
@@ -326,12 +403,26 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         ensureAllTraitsExist(normalizedIds, traits);
         ensureTraitsBelongToSet(targetSetId, traits);
 
-        champTraitRepository.deleteByChamp_Id(champ.getId());
-        List<ChampTrait> newChampTraits = traits.stream()
-                .map(trait -> ChampTrait.builder().champ(champ).trait(trait).build())
+        List<ChampTrait> linksToDelete = existingLinks.stream()
+                .filter(link -> !requestedTraitIds.contains(link.getTrait().getId()))
                 .toList();
-        champTraitRepository.saveAll(newChampTraits);
-        champ.setChampTraits(new ArrayList<>(newChampTraits));
+        if (!linksToDelete.isEmpty()) {
+            champTraitRepository.deleteAllInBatch(linksToDelete);
+        }
+
+        List<ChampTrait> linksToAdd = traits.stream()
+                .filter(trait -> !existingTraitIds.contains(trait.getId()))
+                .map(trait -> ChampTrait.builder()
+                        .champ(champ)
+                        .trait(trait)
+                        .build())
+                .toList();
+        if (!linksToAdd.isEmpty()) {
+            champTraitRepository.saveAll(linksToAdd);
+        }
+
+        List<ChampTrait> updatedLinks = champTraitRepository.findByChamp_Id(champ.getId());
+        champ.setChampTraits(new ArrayList<>(updatedLinks));
     }
 
     private void ensureNoDuplicateTraitIds(List<Long> traitIds) {
@@ -367,6 +458,35 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                     new Object[]{"traitIds " + mismatchedTraitIds + " do not belong to setId " + setId}
             );
         }
+    }
+
+    private void deleteObsoleteManagedImage(String oldImageUrl, String newImageUrl) {
+        if (Objects.equals(oldImageUrl, newImageUrl) || !StringUtils.hasText(oldImageUrl)) {
+            return;
+        }
+        fileStorageService.deleteManagedImageIfExists(oldImageUrl);
+    }
+
+    private ChampResponse toResponse(Champ champ) {
+        ChampResponse response = champMapper.toResponse(champ);
+        response.setImageUrl(assetUrlService.toPublicUrl(response.getImageUrl()));
+        return response;
+    }
+
+    private void validateParentSetCanRestore(Sets parentSet) {
+        if (parentSet == null) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{"parent_set_not_found"});
+        }
+        if (parentSet.isDeleted()) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{"parent_set_deleted"});
+        }
+    }
+
+    private BulkRestoreChampFailedItem failedItem(Long champId, String reason) {
+        return BulkRestoreChampFailedItem.builder()
+                .champId(champId)
+                .reason(reason)
+                .build();
     }
 
 }
