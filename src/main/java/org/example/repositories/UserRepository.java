@@ -15,7 +15,7 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
-                SELECT DISTINCT u FROM User u
+                SELECT u FROM User u
                 JOIN FETCH u.role r
                 LEFT JOIN FETCH r.permissions
                 WHERE u.username = :username
