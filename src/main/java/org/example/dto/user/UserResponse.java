@@ -2,9 +2,12 @@ package org.example.dto.user;
 
 import lombok.Builder;
 
+import java.time.Instant;
+
 @Builder
-public record UserResponse(String userName,
+public record UserResponse(Long id, String username,
                            String email,
-                           Long roleId,
-                           String roleName) {
+                           String roleName,
+                           Boolean enabled,
+                           Instant createdAt, Instant updatedAt, Long updatedBy) {
 }

@@ -1,6 +1,7 @@
 package org.example.dto.user;
 
 import lombok.Builder;
+
 import java.util.List;
 
 /**
@@ -8,9 +9,9 @@ import java.util.List;
  */
 @Builder
 public record UserInfoResponse(
-    String userName,
-    String email,
-    String role,
-    List<PermissionDto> permissions
+        String username,
+        String email,
+        String role,
+        List<PermissionDto> permissions
 ) {
 }

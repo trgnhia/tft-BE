@@ -7,7 +7,7 @@ import org.example.annotations.Password;
 
 public record CreateUserRequest(
         @NotBlank
-        String userName,
+        String username,
 
         @NotBlank
         @Email(message = "{error.EMAIL_INVALID}")
