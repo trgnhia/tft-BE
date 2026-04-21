@@ -246,6 +246,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     }
 
     @Override
+    @Transactional
     public void restore(Long id) {
         log.info("[CHAMP-ADMIN] Restoring deleted champ id: {}", id);
         filterUtil.disableDeletedFilter();
@@ -256,9 +257,8 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                 ));
 
         if (!champ.isDeleted()) {
-            log.warn("[CHAMP-ADMIN] Restore failed: Champ id={} is not in deleted state", id);
-            throw new DataException(ErrorCode.INVALID_PARAMETER,
-                    new Object[]{Constants.MessageKey.ENTITY_CHAMP});
+            log.info("[CHAMP-ADMIN] Restore skipped: Champ id={} is already active", id);
+            return;
         }
 
         validateParentSetCanRestore(champ.getSets());
@@ -470,6 +470,16 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     private ChampResponse toResponse(Champ champ) {
         ChampResponse response = champMapper.toResponse(champ);
         response.setImageUrl(assetUrlService.toPublicUrl(response.getImageUrl()));
+        boolean setDeleted = champ.getSets() != null && champ.getSets().isDeleted();
+        response.setSetDeleted(setDeleted);
+        if (Boolean.TRUE.equals(response.getDeleted())) {
+            boolean canRestore = !setDeleted;
+            response.setCanRestore(canRestore);
+            response.setRestoreBlockedReason(canRestore ? null : "SET_INACTIVE");
+        } else {
+            response.setCanRestore(false);
+            response.setRestoreBlockedReason(null);
+        }
         return response;
     }
 

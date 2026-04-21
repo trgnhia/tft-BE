@@ -3,11 +3,14 @@ package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.constant.Constants;
+import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
+import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
 import org.example.dto.champs.BulkDeleteRequest;
 import org.example.dto.trait.*;
+import org.example.entities.Sets;
 import org.example.entities.trait.Trait;
 import org.example.mapper.TraitMapper;
 import org.example.repositories.SetsRepository;
@@ -210,6 +213,10 @@ public class TraitServiceImpl extends BaseService implements TraitService {
         log.info("[TRAIT][ADMIN] Restoring id={}", id);
         Trait trait = traitRepository.findByIdAdmin(id)
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.MessageKey.ENTITY_TRAIT));
+        if (!trait.isDeleted()) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{"trait_not_deleted"});
+        }
+        validateParentSetCanRestore(trait.getSets(), trait.getId());
         trait.setDeleted(false);
         traitRepository.save(trait);
         log.info("[TRAIT][ADMIN] Restored id={}", id);
@@ -242,7 +249,27 @@ public class TraitServiceImpl extends BaseService implements TraitService {
         if (request.getIds() == null || request.getIds().isEmpty()) {
             return;
         }
-        traitRepository.restoreAllByIds(request.getIds());
+
+        List<Trait> traits = traitRepository.findAllByIdsAdmin(request.getIds());
+        if (traits.size() != request.getIds().size()) {
+            throw new ResourceNotFoundException(Constants.MessageKey.ENTITY_TRAIT);
+        }
+
+        List<Long> blockedTraitIds = traits.stream()
+                .filter(Trait::isDeleted)
+                .filter(trait -> trait.getSets() == null || trait.getSets().isDeleted())
+                .map(Trait::getId)
+                .toList();
+        if (!blockedTraitIds.isEmpty()) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{
+                    "Cannot restore traits " + blockedTraitIds + " because parent set is inactive"
+            });
+        }
+
+        traits.stream()
+                .filter(Trait::isDeleted)
+                .forEach(trait -> trait.setDeleted(false));
+        traitRepository.saveAll(traits);
     }
 
     @Override
@@ -278,7 +305,25 @@ public class TraitServiceImpl extends BaseService implements TraitService {
     private TraitResponse toResponse(Trait trait) {
         TraitResponse response = traitMapper.toResponse(trait);
         response.setIconUrl(assetUrlService.toPublicUrl(response.getIconUrl()));
+        boolean setDeleted = trait.getSets() != null && trait.getSets().isDeleted();
+        response.setSetDeleted(setDeleted);
+        if (Boolean.TRUE.equals(response.getDeleted())) {
+            boolean canRestore = !setDeleted;
+            response.setCanRestore(canRestore);
+            response.setRestoreBlockedReason(canRestore ? null : "SET_INACTIVE");
+        } else {
+            response.setCanRestore(false);
+            response.setRestoreBlockedReason(null);
+        }
         return response;
+    }
+
+    private void validateParentSetCanRestore(Sets parentSet, Long traitId) {
+        if (parentSet == null || parentSet.isDeleted()) {
+            throw new DataException(ErrorCode.INVALID_PARAMETER, new Object[]{
+                    "Cannot restore trait " + traitId + " because parent set is inactive"
+            });
+        }
     }
 
 }

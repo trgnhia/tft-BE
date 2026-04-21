@@ -53,10 +53,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ResponseBody
     public ResponseEntity<ApiResponse<Void>> handleServerException(ServerException ex) {
         log.error("ServerException occurred: {}", ex.getMessage(), ex);
+        String[] args = ex.getArgs() == null ? new String[0] : ex.getArgs();
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
-                ex.getArgs(),
-                "");
+                (Object[]) args);
         return new ResponseEntity<>(
                 ApiResponse.error(msg, ex.getErrorCode().getCode(), ex.getMessage()), ex.getStatus()
         );
@@ -79,10 +79,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DataException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataException(DataException ex) {
         log.error("DataException Error ", ex);
+        String[] args = ex.getArgs() == null ? new String[0] : ex.getArgs();
         String msg = MessageUtils.getMessage(
                 ERROR_LOG_PREFIX + ex.getErrorCode(),
-                ex.getArgs(),
-                "");
+                (Object[]) args);
         return new ResponseEntity<>(
                 ApiResponse.error(msg, ErrorCode.UNEXPECTED_ERROR.getCode(), ex.getMessage()), ex.getStatus()
         );
