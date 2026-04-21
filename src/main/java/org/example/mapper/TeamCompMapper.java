@@ -11,8 +11,11 @@ import org.mapstruct.*;
 public interface TeamCompMapper {
 
     // MAPPING ENTITY -> RESPONSE
+    @Mapping(target = "slug", source = "slug")
     @Mapping(target = "champions", source = "teamCompChamps")
     @Mapping(target = "set", source = "sets")
+    @Mapping(target = "createdAt", source = "createdAt", dateFormat = "yyyy-MM-dd HH:mm:ss")
+    @Mapping(target = "updatedAt", source = "updatedAt", dateFormat = "yyyy-MM-dd HH:mm:ss")
     TeamCompResponse toResponse(TeamComp entity);
 
     TeamCompResponse.SetSimpleDto toSetSimpleDto(Sets sets);
