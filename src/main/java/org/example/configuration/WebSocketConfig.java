@@ -35,7 +35,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     /**
      * Đăng ký endpoint để client kết nối WebSocket.
      *
-     * - "/ws": URL để FE connect (ws://localhost:8080/ws)
+     * - "/ws": URL để FE connect (ws://localhost:8081/ws)
      * - Cho phép tất cả domain để tránh lỗi CORS khi FE khác domain
      * @param registry cấu hình endpoint WebSocket
      */
