@@ -56,14 +56,12 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public RoleDto deleteRole(Long id) {
+    public void deleteRole(Long id) {
         Role role = getRoleWithPermissionOrThrow(id);
         if (Arrays.stream(RoleCode.values()).anyMatch(roleCode -> roleCode.toString().equals(role.getCode()))) {
             throw new ServerException(ErrorCode.DELETE_BASIC_ROLE);
         }
-        role.setDeleted(true);
-        Role saved = roleRepository.save(role);
-        return roleMapper.toDto(saved);
+        roleRepository.delete(role);
     }
 
     @Override

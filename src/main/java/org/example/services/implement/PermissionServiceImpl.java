@@ -7,6 +7,7 @@ import org.example.common.enums.RESOURCE;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
 import org.example.dto.permission.CreatePermissionRequest;
+import org.example.dto.permission.PermissionOptions;
 import org.example.dto.permission.UpdatePermissionRequest;
 import org.example.dto.user.PermissionDto;
 import org.example.entities.Permission;
@@ -17,6 +18,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -47,7 +49,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public PermissionDto create(CreatePermissionRequest request) {
-        RESOURCE resource = RESOURCE.valueOf(request.name().toUpperCase());
+        RESOURCE resource = RESOURCE.valueOf(request.resource().toUpperCase());
         PERMISSION permit = PERMISSION.valueOf(request.permission().toUpperCase());
         String normalizedCode = String.format("%s_%s", resource, permit);
 
@@ -78,6 +80,13 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public void delete(Long id) {
         permissionRepository.deleteById(id);
+    }
+
+    @Override
+    public PermissionOptions getOptions() {
+        List<String> resources = Arrays.stream(RESOURCE.values()).map(Enum::toString).toList();
+        List<String> actions = Arrays.stream(PERMISSION.values()).map(Enum::toString).toList();
+        return new PermissionOptions(resources, actions);
     }
 
     private void validatePermission(Permission permission) {
