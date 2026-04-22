@@ -9,6 +9,7 @@ import org.example.common.exception.ServerException;
 import org.example.annotations.ImportColumn;
 import org.example.imports.model.ImportExecutionResult;
 import org.example.imports.model.ImportRow;
+import org.example.imports.model.ImportRowError;
 import org.example.imports.model.ParsedImportFile;
 import org.example.imports.service.GenericImportService;
 import org.example.imports.service.ImportRowPersister;
@@ -88,16 +89,19 @@ public class GenericImportServiceImpl implements GenericImportService {
         log.info("Import completed: file={}, success={}, failed={}", file.getOriginalFilename(), successCount, failedCount);
 
         if (failedCount == 0) {
-            return ImportExecutionResult.success(successCount);
+            return ImportExecutionResult.success(parsedFile.rows().size(), successCount);
         }
 
         Map<Long, String> errorDetailsByRow = joinErrorsByRow(rowErrors);
+        List<ImportRowError> rowErrorDetails = buildRowErrors(rowErrors);
 
         byte[] errorFileContent = writeErrorFile(strategy, parsedFile, errorDetailsByRow);
         String errorFileName = buildErrorFileName(file.getOriginalFilename(), strategy.outputFileExtension());
 
         return ImportExecutionResult.withErrors(
+                parsedFile.rows().size(),
                 successCount, failedCount,
+                rowErrorDetails,
                 errorFileContent, errorFileName, strategy.outputContentType()
         );
     }
@@ -166,6 +170,13 @@ public class GenericImportServiceImpl implements GenericImportService {
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
+    }
+
+    private List<ImportRowError> buildRowErrors(Map<Long, List<String>> rowErrors) {
+        return rowErrors.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new ImportRowError(entry.getKey(), List.copyOf(entry.getValue())))
+                .toList();
     }
 
     private ImportFileStrategy resolveStrategy(String extension) {

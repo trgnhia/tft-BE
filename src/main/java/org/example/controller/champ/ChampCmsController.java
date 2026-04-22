@@ -3,14 +3,19 @@ package org.example.controller.champ;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.common.constant.Constants;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.champs.*;
 import org.example.dto.upload.DeleteUploadRequest;
 import org.example.dto.upload.FileUploadResponse;
+import org.example.imports.model.ImportExecutionResult;
+import org.example.services.ChampImportService;
 import org.example.services.FileStorageService;
 import org.example.services.implement.ChampServiceImpl;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +25,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+import static org.example.util.MessageUtils.getMessage;
+
 @RestController
 @RequestMapping("/cms/champs")
 @RequiredArgsConstructor
@@ -27,6 +34,7 @@ import java.util.List;
 public class ChampCmsController {
 
     private final ChampServiceImpl champService;
+    private final ChampImportService champImportService;
     private final FileStorageService fileStorageService;
 
     @PostMapping
@@ -151,5 +159,44 @@ public class ChampCmsController {
         log.info("REST request to delete champ uploaded image: {}", request.getUrl());
         fileStorageService.deleteImageByUrl(request.getUrl());
         return ApiResponse.success(null);
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ResponseEntity<ApiResponse<ChampImportResultResponse>> importChamps(@RequestParam("file") List<MultipartFile> files) {
+        if (files == null || files.size() != 1) {
+            throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_SINGLE_FILE_REQUIRED));
+        }
+
+        ImportExecutionResult result = champImportService.importChamps(files.get(0));
+        ChampImportResultResponse body = ChampImportResultResponse.builder()
+                .totalRows(result.totalCount())
+                .successRows(result.successCount())
+                .failedRows(result.failedCount())
+                .message(result.message())
+                .rowErrors(result.rowErrors().stream()
+                        .map(rowError -> ChampImportRowErrorResponse.builder()
+                                .rowNumber(rowError.rowNumber())
+                                .errors(rowError.errors())
+                                .build())
+                        .toList())
+                .build();
+
+        HttpStatus status = result.hasFailures() ? HttpStatus.MULTI_STATUS : HttpStatus.OK;
+        return ResponseEntity.status(status).body(ApiResponse.success(body));
+    }
+
+    @GetMapping("/import/template")
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ResponseEntity<ByteArrayResource> downloadImportTemplate(
+            @RequestParam(value = "format", required = false, defaultValue = "xlsx") String format) {
+        ChampImportTemplateFile template = champImportService.downloadTemplate(format);
+        ByteArrayResource resource = new ByteArrayResource(template.content());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + template.fileName() + "\"")
+                .contentType(MediaType.parseMediaType(template.contentType()))
+                .contentLength(template.content().length)
+                .body(resource);
     }
 }

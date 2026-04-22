@@ -36,6 +36,9 @@ public class Champ extends AuditableEntity {
     @Column(name = "slug", nullable = false, unique = true, length = 100)
     private String slug;
 
+    @Column(name = "code", nullable = false, unique = true, length = 100)
+    private String code;
+
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 

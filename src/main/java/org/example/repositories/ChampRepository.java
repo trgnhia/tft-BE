@@ -1,6 +1,7 @@
 package org.example.repositories;
 
 import org.example.entities.champ.Champ;
+import org.example.repositories.projection.ChampImportLookup;
 import org.example.repositories.projection.ChampRestoreCandidate;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,8 @@ public interface ChampRepository extends JpaRepository<Champ, Long>, JpaSpecific
 
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
+    boolean existsByCodeIgnoreCase(String code);
+    boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
 
     @EntityGraph(attributePaths = {"champTraits", "champTraits.trait"})
     Page<Champ> findByNameContainingIgnoreCase(String keyword, Pageable pageable);
@@ -57,6 +60,29 @@ public interface ChampRepository extends JpaRepository<Champ, Long>, JpaSpecific
 
     @EntityGraph(attributePaths = {"champTraits", "champTraits.trait"})
     List<Champ> findAllBySetsIdAndDeletedFalseOrderByNameAsc(Long setId);
+
+    @Query(value = "select slug from champs", nativeQuery = true)
+    List<String> findAllSlugsIncludingDeleted();
+
+    @Query(value = """
+            select c.id as champId,
+                   c.code as code,
+                   c.deleted as deleted
+            from champs c
+            """, nativeQuery = true)
+    List<ChampImportLookup> findAllCodeLookupIncludingDeleted();
+
+    @Query(value = "select exists(select 1 from champs c where lower(c.slug) = lower(:slug))", nativeQuery = true)
+    boolean existsBySlugIncludingDeleted(@Param("slug") String slug);
+
+    @Query(value = "select exists(select 1 from champs c where lower(c.slug) = lower(:slug) and c.id <> :id)", nativeQuery = true)
+    boolean existsBySlugAndIdNotIncludingDeleted(@Param("slug") String slug, @Param("id") Long id);
+
+    @Query(value = "select exists(select 1 from champs c where lower(c.code) = lower(:code))", nativeQuery = true)
+    boolean existsByCodeIncludingDeleted(@Param("code") String code);
+
+    @Query(value = "select exists(select 1 from champs c where lower(c.code) = lower(:code) and c.id <> :id)", nativeQuery = true)
+    boolean existsByCodeAndIdNotIncludingDeleted(@Param("code") String code, @Param("id") Long id);
 
     @Query("""
             select c.id as champId,
