@@ -1,5 +1,6 @@
 package org.example.dto.champs;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -31,14 +32,17 @@ public class ChampStatsRequest {
     private int range;
 
     @JsonProperty("magic_resist")
+    @JsonAlias("magicResist")
     @Min(value = 0, message = "{" + Constants.MessageKey.CHAMP_STATS_MAGIC_RESIST_MIN + "}")
     private int magicResist;
 
     @JsonProperty("attack_speed")
+    @JsonAlias("attackSpeed")
     @DecimalMin(value = "0.1", message = "{" + Constants.MessageKey.CHAMP_STATS_ATTACK_SPEED_MIN + "}")
     private double attackSpeed;
 
     @JsonProperty("crit_chance")
+    @JsonAlias("critChance")
     @DecimalMin(value = "0.0", message = "{" + Constants.MessageKey.CHAMP_STATS_CRIT_CHANCE_MIN + "}")
     @DecimalMax(value = "1.0", message = "{" + Constants.MessageKey.CHAMP_STATS_CRIT_CHANCE_MAX + "}")
     private double critChance;

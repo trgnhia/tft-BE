@@ -8,6 +8,7 @@ import org.example.dto.user.*;
 import org.example.entities.Permission;
 import org.example.entities.Role;
 import org.example.entities.User;
+import org.example.mapper.UserMapper;
 import org.example.repositories.RoleRepository;
 import org.example.repositories.UserRepository;
 import org.example.services.UserService;
@@ -26,28 +27,29 @@ public class UserServiceImpl implements UserService {
     private final UserBusinessValidator userBusinessValidator;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
 
     @Override
     public PageResponse<UserResponse> getAllUser(UserFilter userFilter, Pageable pageable) {
-        var userPaged = userRepository.findAllByFilter(userFilter.userName(), userFilter.email(), userFilter.roleId(), userFilter.enabled(), pageable)
-                .map(this::mapToUserResponse);
+        var userPaged = userRepository.findAllByFilter(userFilter.username(), userFilter.email(), userFilter.roleId(), userFilter.enabled(), pageable)
+                .map(userMapper::toResponse);
         return PageResponse.from(userPaged);
     }
 
     @Override
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        userBusinessValidator.validateUserUniqueness(request.userName(), request.email());
+        userBusinessValidator.validateUserUniqueness(request.username(), request.email());
         User user = new User();
-        user.setUsername(request.userName());
+        user.setUsername(request.username());
         user.setEmail(request.email());
         Role role = getOrThrowRole(request.roleId());
         user.setRole(role);
         user.setPasswordHash(passwordEncoder.encode(request.defaultPassword()));
         User saved = userRepository.save(user);
 
-        return mapToUserResponse(saved);
+        return userMapper.toResponse(saved);
     }
 
     @Override
@@ -57,7 +59,7 @@ public class UserServiceImpl implements UserService {
         Role newRole = getOrThrowRole(request.roleId());
         user.setRole(newRole);
         User saved = userRepository.save(user);
-        return mapToUserResponse(saved);
+        return userMapper.toResponse(saved);
     }
 
     @Override
@@ -84,6 +86,7 @@ public class UserServiceImpl implements UserService {
     public UserDetailedResponse deleteUserById(Long userId) {
         User user = getOrThrowUser(userId);
         user.setDeleted(true);
+        user.setEnabled(false);
         var deleted = userRepository.save(user);
         return mapToUserDetailed(deleted);
     }
@@ -104,7 +107,7 @@ public class UserServiceImpl implements UserService {
 
     private UserInfoResponse mapToUserInfo(User user) {
         return UserInfoResponse.builder()
-                .userName(user.getUsername())
+                .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole().getCode())
                 .permissions(resolvePermissions(user.getRole().getPermissions()))
@@ -113,7 +116,7 @@ public class UserServiceImpl implements UserService {
 
     private UserDetailedResponse mapToUserDetailed(User user) {
         return UserDetailedResponse.builder()
-                .userName(user.getUsername())
+                .username(user.getUsername())
                 .email(user.getEmail())
                 .enabled(user.isEnabled())
                 .deleted(user.isDeleted())
@@ -135,15 +138,6 @@ public class UserServiceImpl implements UserService {
         return PermissionDto.builder()
                 .code(permission.getCode())
                 .description(permission.getDescription())
-                .build();
-    }
-
-    private UserResponse mapToUserResponse(User saved) {
-        return UserResponse.builder()
-                .userName(saved.getUsername())
-                .email(saved.getEmail())
-                .roleId(saved.getRole().getId())
-                .roleName(saved.getRole().getName())
                 .build();
     }
 

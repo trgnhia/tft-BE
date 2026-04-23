@@ -12,11 +12,15 @@ public class TeamCompResponse {
     private String tier;
     private String name;
     private String style;
+    private String slug;
     private boolean deleted;
     private SetSimpleDto set;
 
     private List<ChampionSimpleDto> champions;
 
+    // metadata
+    private String createdAt;
+    private String updatedAt;
     @Getter
     @Setter
     public static class SetSimpleDto {

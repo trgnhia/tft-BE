@@ -6,13 +6,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.champs.*;
-import org.example.services.ChampService;
+import org.example.dto.upload.DeleteUploadRequest;
+import org.example.dto.upload.FileUploadResponse;
+import org.example.services.FileStorageService;
 import org.example.services.implement.ChampServiceImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,6 +27,7 @@ import java.util.List;
 public class ChampCmsController {
 
     private final ChampServiceImpl champService;
+    private final FileStorageService fileStorageService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
@@ -67,6 +72,23 @@ public class ChampCmsController {
         return ApiResponse.success(null);
     }
 
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ApiResponse<PageResponse<ChampResponse>> search(
+            @ModelAttribute ChampFilterRequest filter,
+            Pageable pageable) {
+        log.info("REST CMS search champs filter={}", filter);
+        return ApiResponse.success(champService.search(filter, pageable));
+    }
+
+    @GetMapping("/dropdown")
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ApiResponse<List<ChampResponse>> getForDropdown(
+            @RequestParam(required = false) Long setId) {
+        log.info("REST CMS champ dropdown setId={}", setId);
+        return ApiResponse.success(champService.getAllSortedByNameAsc(setId));
+    }
+
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<ChampResponse>> getAllAdmin(
@@ -109,9 +131,25 @@ public class ChampCmsController {
 
     @PatchMapping("/admin/bulk/restore")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<Void> bulkRestore(@RequestBody @Valid BulkDeleteRequest request) {
+    public ApiResponse<BulkRestoreChampResponse> bulkRestore(@RequestBody @Valid BulkDeleteRequest request) {
         log.info("REST ADMIN bulkRestore champs ids={}", request.getIds());
-        champService.bulkRestore(request);
+        return ApiResponse.success(champService.bulkRestore(request));
+    }
+
+    @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ResponseEntity<ApiResponse<FileUploadResponse>> uploadImage(
+            @RequestParam("file") MultipartFile file) {
+        log.info("REST request to upload champ image: {}", file.getOriginalFilename());
+        FileUploadResponse response = fileStorageService.storeImage(file, "champs");
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+    }
+
+    @DeleteMapping("/upload-image")
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ApiResponse<Void> deleteUploadedImage(@RequestBody @Valid DeleteUploadRequest request) {
+        log.info("REST request to delete champ uploaded image: {}", request.getUrl());
+        fileStorageService.deleteImageByUrl(request.getUrl());
         return ApiResponse.success(null);
     }
 }

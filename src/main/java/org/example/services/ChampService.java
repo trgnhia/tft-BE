@@ -14,6 +14,7 @@ public interface ChampService {
 
     PageResponse<ChampResponse> search(ChampFilterRequest filter, Pageable pageable);
     List<ChampResponse> getBySetId(Long setId); // dung cho dropdown
+    List<ChampResponse> getAllSortedByNameAsc(Long setId);
 
     // editor
     ChampResponse create(CreateChampRequest request);
@@ -33,7 +34,7 @@ public interface ChampService {
     PageResponse<ChampResponse> searchAdmin(ChampFilterRequest filter, Pageable pageable);
 
     /** Restore nhiều champ cùng lúc */
-    void bulkRestore(BulkDeleteRequest request);
+    BulkRestoreChampResponse bulkRestore(BulkDeleteRequest request);
 
     /** Thống kê tổng quan */
     ChampOverviewStatsResponse getStats();

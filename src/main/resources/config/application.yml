@@ -9,8 +9,8 @@ spring:
     name: infra-core
   servlet:
     multipart:
-      max-file-size: ${MULTIPART_MAX_FILE_SIZE:10MB}
-      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:10MB}
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:2MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:2MB}
   jackson:
     # Force ISO-8601 string output (e.g., "2023-10-25T14:30:00Z") instead of [2023, 10...]
     serialization:
@@ -65,3 +65,9 @@ spring:
 
 cookie:
   same-site: ${COOKIE_SAME_SITE:Lax}
+
+app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:}
+  upload:
+    dir: ${APP_UPLOAD_DIR:uploads}
+    max-image-size-bytes: ${APP_UPLOAD_MAX_IMAGE_SIZE_BYTES:2097152}

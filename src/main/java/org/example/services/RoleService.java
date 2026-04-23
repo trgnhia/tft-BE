@@ -14,7 +14,7 @@ public interface RoleService {
 
     RoleDto updateRolePermissions(Long id, UpdateRolePermissionRequest request);
 
-    RoleDto deleteRole(Long id);
+    void deleteRole(Long id);
 
     List<RoleDto> getAll(String keyword);
 

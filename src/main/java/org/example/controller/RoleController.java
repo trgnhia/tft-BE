@@ -50,15 +50,15 @@ public class RoleController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    @PatchMapping("/{id}/permissions")
+    @PutMapping("/{id}/permissions")
     public ResponseEntity<ApiResponse<RoleDto>> updateRolePermissions(@PathVariable Long id, @Valid @RequestBody UpdateRolePermissionRequest request) {
         var result = roleService.updateRolePermissions(id, request);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<RoleDto>> deleteRole(@PathVariable Long id) {
-        var result = roleService.deleteRole(id);
-        return ResponseEntity.ok(ApiResponse.success(result));
+    public ResponseEntity<ApiResponse<String>> deleteRole(@PathVariable Long id) {
+        roleService.deleteRole(id);
+        return ResponseEntity.ok(ApiResponse.success("Delete Role Success"));
     }
 }

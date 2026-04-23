@@ -44,6 +44,9 @@ public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecific
     @Query(value = "SELECT * FROM traits WHERE id = :id", nativeQuery = true)
     Optional<Trait> findByIdAdmin(@Param("id") Long id);
 
+    @Query(value = "SELECT * FROM traits WHERE id IN (:ids)", nativeQuery = true)
+    List<Trait> findAllByIdsAdmin(@Param("ids") List<Long> ids);
+
     @Query("""
             SELECT t FROM Trait t
             WHERE t.id IN :ids
@@ -76,9 +79,10 @@ public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecific
     @Query("""
             SELECT t FROM Trait t
             WHERE t.deleted = false
+              AND (:setId IS NULL OR t.sets.id = :setId)
             ORDER BY t.name ASC
             """)
-    List<Trait> findAllActiveForDropdown();
+    List<Trait> findAllActiveForDropdown(@Param("setId") Long setId);
 
     @Query(value = """
     SELECT * FROM traits t

@@ -19,11 +19,14 @@ public class ChampResponse {
     private Long setsId;
     private Integer cost;
     private String setsName;
+    private Boolean setDeleted;
     private String slug;
     private String name;
     private String imageUrl;
     private List<ChampTraitResponse> traits;
     private ChampStatsResponse stats;
+    private Boolean canRestore;
+    private String restoreBlockedReason;
     private Boolean deleted;
     private Instant createdAt;
     private Instant updatedAt;

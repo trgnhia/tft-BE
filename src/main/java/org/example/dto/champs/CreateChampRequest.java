@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.common.constant.Constants;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -38,4 +40,6 @@ public class CreateChampRequest {
     @Valid
     @NotNull(message = "{" + Constants.MessageKey.ERROR_INCOMPLETE_DATA + "}")
     private ChampStatsRequest stats;
+
+    private List<Long> traitIds;
 }

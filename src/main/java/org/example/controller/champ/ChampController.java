@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
+import org.example.dto.champs.ChampFilterRequest;
 import org.example.dto.champs.ChampResponse;
-import org.example.services.ChampService;
 import org.example.services.implement.ChampServiceImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +38,21 @@ public class ChampController {
     public ApiResponse<ChampResponse> getBySlug(@PathVariable String slug) {
         log.info("REST request to get Champ by slug: {}", slug);
         return ApiResponse.success(champService.getBySlug(slug));
+    }
+
+    @GetMapping("/search")
+    public ApiResponse<PageResponse<ChampResponse>> search(
+            @ModelAttribute ChampFilterRequest filter,
+            Pageable pageable) {
+        log.info("REST search champs filter={}", filter);
+        return ApiResponse.success(champService.search(filter, pageable));
+    }
+
+    @GetMapping("/sorted")
+    public ApiResponse<List<ChampResponse>> getAllSortedByNameAsc(
+            @RequestParam(required = false) Long setId) {
+        log.info("REST get champs sorted by name asc setId={}", setId);
+        return ApiResponse.success(champService.getAllSortedByNameAsc(setId));
     }
 
     @GetMapping("/set/{setId}")

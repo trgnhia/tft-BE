@@ -39,6 +39,8 @@ public class SecurityConfig {
             "/sets/**",
             "/items/**",
             "/team-comp/**",
+            "/uploads/**",
+            "/api/v1/uploads/**",
             "/ws/**",
             "/ws",
 

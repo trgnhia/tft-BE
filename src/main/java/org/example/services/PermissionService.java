@@ -1,6 +1,7 @@
 package org.example.services;
 
 import org.example.dto.permission.CreatePermissionRequest;
+import org.example.dto.permission.PermissionOptions;
 import org.example.dto.permission.UpdatePermissionRequest;
 import org.example.dto.user.PermissionDto;
 import org.springframework.data.domain.Pageable;
@@ -19,4 +20,6 @@ public interface PermissionService {
     PermissionDto update(Long id, UpdatePermissionRequest request);
 
     void delete(Long id);
+
+    PermissionOptions getOptions();
 }
