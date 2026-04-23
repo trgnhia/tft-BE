@@ -26,7 +26,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 @Service
@@ -169,6 +171,24 @@ public class TraitServiceImpl extends BaseService implements TraitService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<String> getAvailableTypes() {
+        log.info("[TRAIT] getAvailableTypes");
+        LinkedHashMap<String, String> deduplicated = new LinkedHashMap<>();
+        for (String type : traitRepository.findDistinctTypesForCms()) {
+            if (type == null) {
+                continue;
+            }
+            String trimmed = type.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            deduplicated.putIfAbsent(trimmed.toLowerCase(Locale.ROOT), trimmed);
+        }
+        return deduplicated.values().stream().toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TraitResponse> getBySetId(Long setId) {
         log.info("[TRAIT] getBySetId setId={}", setId);
         return traitRepository.findAllActiveForDropdown(setId)
@@ -227,17 +247,37 @@ public class TraitServiceImpl extends BaseService implements TraitService {
     public PageResponse<TraitResponse> searchAdmin(TraitFilterRequest filter, Pageable pageable) {
         log.info("[TRAIT][ADMIN] searchAdmin filter={}", filter);
 
+        List<Long> normalizedSetIds = normalizeSetIds(filter.getSetIds());
+        Long normalizedSetId = normalizedSetIds.isEmpty() ? filter.getSetId() : null;
+        String normalizedKeyword = normalizeText(filter.getKeyword());
+        String normalizedType = normalizeText(filter.getType());
+        String normalizedStatus = normalizeStatus(filter.getStatus());
+
         if (Boolean.TRUE.equals(filter.getIncludeDeleted())) {
             Page<Trait> page = traitRepository.searchAdminIncludeDeleted(
-                    filter.getKeyword(),
-                    filter.getType(),
-                    filter.getSetId(),
+                    normalizedKeyword,
+                    normalizedType,
+                    !normalizedSetIds.isEmpty(),
+                    normalizedSetIds.isEmpty() ? List.of(-1L) : normalizedSetIds,
+                    normalizedSetId,
+                    normalizedStatus,
+                    filter.getRestorable(),
                     pageable
             );
             return PageResponse.from(page.map(this::toResponse));
         }
 
-        Specification<Trait> spec = TraitSpecification.of(filter);
+        TraitFilterRequest normalizedFilter = new TraitFilterRequest();
+        normalizedFilter.setKeyword(normalizedKeyword);
+        normalizedFilter.setType(normalizedType);
+        normalizedFilter.setSetId(normalizedSetId);
+        normalizedFilter.setSetIds(normalizedSetIds);
+        normalizedFilter.setStatus(normalizedStatus);
+        normalizedFilter.setRestorable(filter.getRestorable());
+        normalizedFilter.setIsActive(filter.getIsActive());
+        normalizedFilter.setIncludeDeleted(filter.getIncludeDeleted());
+
+        Specification<Trait> spec = TraitSpecification.of(normalizedFilter);
         return PageResponse.from(traitRepository.findAll(spec, pageable).map(this::toResponse));
     }
 
@@ -324,6 +364,37 @@ public class TraitServiceImpl extends BaseService implements TraitService {
                     "Cannot restore trait " + traitId + " because parent set is inactive"
             });
         }
+    }
+
+    private List<Long> normalizeSetIds(List<Long> setIds) {
+        if (setIds == null || setIds.isEmpty()) {
+            return List.of();
+        }
+        return setIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeStatus(String status) {
+        String normalized = normalizeText(status);
+        if (normalized == null) {
+            return null;
+        }
+
+        String upper = normalized.toUpperCase();
+        if ("ACTIVE".equals(upper) || "INACTIVE".equals(upper)) {
+            return upper;
+        }
+        return null;
     }
 
 }

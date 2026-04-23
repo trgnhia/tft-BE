@@ -4,15 +4,20 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.annotations.ImportColumn;
 import org.example.common.constant.Constants;
 import org.example.common.exception.ServerException;
-import org.example.annotations.ImportColumn;
 import org.example.imports.model.ImportExecutionResult;
 import org.example.imports.model.ImportRow;
+import org.example.imports.model.ImportRowError;
+import org.example.imports.model.ImportRowOutcome;
+import org.example.imports.model.ImportRowReport;
 import org.example.imports.model.ParsedImportFile;
 import org.example.imports.service.GenericImportService;
 import org.example.imports.service.ImportRowPersister;
+import org.example.imports.service.ImportRowPersisterWithOutcome;
 import org.example.imports.strategy.ImportFileStrategy;
+import org.example.imports.util.ImportHeaderUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +32,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -39,6 +51,10 @@ import static org.example.util.MessageUtils.getMessage;
 public class GenericImportServiceImpl implements GenericImportService {
 
     private static final int MAX_ROWS = 50_000;
+    private static final String DEFAULT_SUCCESS_STATUS = "SUCCESS";
+    private static final String WARNING_STATUS = "WARNING";
+    private static final String ERROR_STATUS = "ERROR";
+
     private static final Map<Class<?>, Function<String, Object>> SIMPLE_CONVERTERS = Map.ofEntries(
             Map.entry(String.class, value -> value),
             Map.entry(Integer.class, Integer::parseInt),
@@ -56,6 +72,7 @@ public class GenericImportServiceImpl implements GenericImportService {
 
     private final List<ImportFileStrategy> fileStrategies;
     private final Validator validator;
+
     @Value("${spring.servlet.multipart.max-file-size:10MB}")
     private DataSize maxFileSize;
 
@@ -64,6 +81,18 @@ public class GenericImportServiceImpl implements GenericImportService {
             MultipartFile file,
             Class<T> dtoClass,
             ImportRowPersister<T> rowPersister
+    ) {
+        return importFileWithOutcome(file, dtoClass, rowDto -> {
+            rowPersister.persist(rowDto);
+            return ImportRowOutcome.success(DEFAULT_SUCCESS_STATUS, getMessage("import.row.message.imported_successfully"));
+        });
+    }
+
+    @Override
+    public <T> ImportExecutionResult importFileWithOutcome(
+            MultipartFile file,
+            Class<T> dtoClass,
+            ImportRowPersisterWithOutcome<T> rowPersister
     ) {
         validateFile(file);
         String extension = extractExtension(file.getOriginalFilename());
@@ -81,24 +110,57 @@ public class GenericImportServiceImpl implements GenericImportService {
 
         List<FieldBinding> fieldBindings = resolveFieldBindings(dtoClass, parsedFile.headers());
         Map<Long, List<String>> rowErrors = new LinkedHashMap<>();
-        List<ValidRow<T>> validRows = collectValidRows(dtoClass, fieldBindings, parsedFile.rows(), rowErrors);
-        int successCount = persistValidRows(rowPersister, validRows, rowErrors);
+        Map<Long, ImportRowReport> rowReportsByRow = new LinkedHashMap<>();
+
+        List<ValidRow<T>> validRows = collectValidRows(
+                dtoClass,
+                fieldBindings,
+                parsedFile.rows(),
+                rowErrors,
+                rowReportsByRow
+        );
+
+        PersistSummary persistSummary = persistValidRows(
+                rowPersister,
+                validRows,
+                rowErrors,
+                rowReportsByRow
+        );
+
         int failedCount = rowErrors.size();
+        int warningCount = persistSummary.warningCount();
+        int successCount = persistSummary.successCount();
 
-        log.info("Import completed: file={}, success={}, failed={}", file.getOriginalFilename(), successCount, failedCount);
+        log.info(
+                "Import completed: file={}, success={}, warning={}, failed={}",
+                file.getOriginalFilename(),
+                successCount,
+                warningCount,
+                failedCount
+        );
 
-        if (failedCount == 0) {
-            return ImportExecutionResult.success(successCount);
+        List<ImportRowReport> rowReports = rowReportsByRow.values().stream()
+                .sorted((left, right) -> Long.compare(left.rowNumber(), right.rowNumber()))
+                .toList();
+
+        if (failedCount == 0 && warningCount == 0) {
+            return ImportExecutionResult.success(parsedFile.rows().size(), successCount, rowReports);
         }
 
-        Map<Long, String> errorDetailsByRow = joinErrorsByRow(rowErrors);
+        List<ImportRowError> rowErrorDetails = buildRowErrors(rowErrors);
+        byte[] resultFileContent = writeResultFile(strategy, parsedFile, rowReportsByRow);
+        String resultFileName = buildResultFileName(file.getOriginalFilename(), strategy.outputFileExtension());
 
-        byte[] errorFileContent = writeErrorFile(strategy, parsedFile, errorDetailsByRow);
-        String errorFileName = buildErrorFileName(file.getOriginalFilename(), strategy.outputFileExtension());
-
-        return ImportExecutionResult.withErrors(
-                successCount, failedCount,
-                errorFileContent, errorFileName, strategy.outputContentType()
+        return ImportExecutionResult.withIssues(
+                parsedFile.rows().size(),
+                successCount,
+                failedCount,
+                warningCount,
+                rowErrorDetails,
+                rowReports,
+                resultFileContent,
+                resultFileName,
+                strategy.outputContentType()
         );
     }
 
@@ -125,7 +187,8 @@ public class GenericImportServiceImpl implements GenericImportService {
             Class<T> dtoClass,
             List<FieldBinding> fieldBindings,
             List<ImportRow> rows,
-            Map<Long, List<String>> rowErrors
+            Map<Long, List<String>> rowErrors,
+            Map<Long, ImportRowReport> rowReportsByRow
     ) {
         List<ValidRow<T>> validRows = new ArrayList<>();
         for (ImportRow row : rows) {
@@ -135,37 +198,82 @@ public class GenericImportServiceImpl implements GenericImportService {
             } else {
                 log.debug("Row {} failed validation: {}", row.rowNumber(), result.errors());
                 addRowErrors(rowErrors, row.rowNumber(), result.errors());
+                rowReportsByRow.put(
+                        row.rowNumber(),
+                        new ImportRowReport(row.rowNumber(), ERROR_STATUS, joinMessages(result.errors()))
+                );
             }
         }
         return validRows;
     }
 
-    private <T> int persistValidRows(
-            ImportRowPersister<T> rowPersister,
+    private <T> PersistSummary persistValidRows(
+            ImportRowPersisterWithOutcome<T> rowPersister,
             List<ValidRow<T>> validRows,
-            Map<Long, List<String>> rowErrors
+            Map<Long, List<String>> rowErrors,
+            Map<Long, ImportRowReport> rowReportsByRow
     ) {
         int successCount = 0;
+        int warningCount = 0;
+
         for (ValidRow<T> validRow : validRows) {
             try {
-                rowPersister.persist(validRow.dto());
+                ImportRowOutcome outcome = rowPersister.persist(validRow.dto());
+                ImportRowOutcome normalizedOutcome = normalizeOutcome(outcome);
+
+                if (normalizedOutcome.error() || ERROR_STATUS.equalsIgnoreCase(normalizedOutcome.status())) {
+                    List<String> errors = splitMessages(normalizedOutcome.message());
+                    addRowErrors(rowErrors, validRow.rowNumber(), errors);
+                    rowReportsByRow.put(
+                            validRow.rowNumber(),
+                            new ImportRowReport(validRow.rowNumber(), ERROR_STATUS, joinMessages(errors))
+                    );
+                    continue;
+                }
+
+                String status = normalizedOutcome.status().toUpperCase(Locale.ROOT);
+                String message = messageOrDefault(
+                        normalizedOutcome.message(),
+                        getMessage("import.row.message.imported_successfully")
+                );
+
+                if (isWarningStatus(status)) {
+                    warningCount++;
+                }
+
                 successCount++;
+                rowReportsByRow.put(validRow.rowNumber(), new ImportRowReport(validRow.rowNumber(), status, message));
             } catch (RuntimeException ex) {
                 log.warn("Row {} failed to persist", validRow.rowNumber(), ex);
-                addRowErrors(rowErrors, validRow.rowNumber(), extractExceptionMessages(ex));
+                List<String> errors = extractExceptionMessages(ex);
+                addRowErrors(rowErrors, validRow.rowNumber(), errors);
+                rowReportsByRow.put(
+                        validRow.rowNumber(),
+                        new ImportRowReport(validRow.rowNumber(), ERROR_STATUS, joinMessages(errors))
+                );
             }
         }
-        return successCount;
+
+        return new PersistSummary(successCount, warningCount);
     }
 
-    private Map<Long, String> joinErrorsByRow(Map<Long, List<String>> rowErrors) {
+    private ImportRowOutcome normalizeOutcome(ImportRowOutcome outcome) {
+        if (outcome == null) {
+            return ImportRowOutcome.success(DEFAULT_SUCCESS_STATUS, getMessage("import.row.message.imported_successfully"));
+        }
+        String status = messageOrDefault(outcome.status(), DEFAULT_SUCCESS_STATUS).toUpperCase(Locale.ROOT);
+        String message = messageOrDefault(outcome.message(), getMessage("import.row.message.imported_successfully"));
+        if (outcome.error() || ERROR_STATUS.equals(status)) {
+            return ImportRowOutcome.error(message);
+        }
+        return new ImportRowOutcome(status, message, false);
+    }
+
+    private List<ImportRowError> buildRowErrors(Map<Long, List<String>> rowErrors) {
         return rowErrors.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> String.join("; ", entry.getValue()),
-                        (left, right) -> left,
-                        LinkedHashMap::new
-                ));
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new ImportRowError(entry.getKey(), List.copyOf(entry.getValue())))
+                .toList();
     }
 
     private ImportFileStrategy resolveStrategy(String extension) {
@@ -185,22 +293,28 @@ public class GenericImportServiceImpl implements GenericImportService {
         }
     }
 
-    private byte[] writeErrorFile(
+    private byte[] writeResultFile(
             ImportFileStrategy strategy,
             ParsedImportFile parsedFile,
-            Map<Long, String> errorsByRow
+            Map<Long, ImportRowReport> rowReportsByRow
     ) {
         try {
-            return strategy.buildErrorFile(parsedFile, errorsByRow);
+            return strategy.buildResultFile(parsedFile, rowReportsByRow);
         } catch (IOException ex) {
             throw new IllegalStateException(getMessage(Constants.MessageKey.IMPORT_BUILD_ERROR_FILE_FAILED), ex);
         }
     }
 
     private <T> List<FieldBinding> resolveFieldBindings(Class<T> dtoClass, List<String> headers) {
-        Map<String, Integer> headerIndexMap = new HashMap<>();
+        Map<String, Integer> headerIndexMap = new LinkedHashMap<>();
         for (int i = 0; i < headers.size(); i++) {
-            headerIndexMap.put(normalize(headers.get(i)), i);
+            String rawHeader = headers.get(i);
+            headerIndexMap.putIfAbsent(normalize(rawHeader), i);
+
+            String canonicalHeader = ImportHeaderUtils.extractCanonicalHeader(rawHeader);
+            if (!canonicalHeader.isBlank()) {
+                headerIndexMap.putIfAbsent(normalize(canonicalHeader), i);
+            }
         }
 
         List<String> missingColumns = new ArrayList<>();
@@ -213,11 +327,14 @@ public class GenericImportServiceImpl implements GenericImportService {
                 if (columnIndex == null) {
                     missingColumns.add(annotation.name());
                 } else {
+                    String resolvedColumnName = columnIndex < headers.size()
+                            ? headers.get(columnIndex)
+                            : annotation.name();
                     fieldBindings.add(
                             new FieldBinding(
                                     field.getName(),
                                     field.getType(),
-                                    annotation.name(),
+                                    resolvedColumnName,
                                     columnIndex,
                                     annotation.required()
                             )
@@ -296,7 +413,6 @@ public class GenericImportServiceImpl implements GenericImportService {
         }
     }
 
-
     private Object convertValue(String value, Class<?> targetType) {
         try {
             Function<String, Object> simpleConverter = SIMPLE_CONVERTERS.get(targetType);
@@ -339,8 +455,6 @@ public class GenericImportServiceImpl implements GenericImportService {
         };
     }
 
-
-
     private String extractExtension(String fileName) {
         if (fileName == null || !fileName.contains(".")) {
             throw new IllegalArgumentException(getMessage(Constants.MessageKey.IMPORT_FILE_EXTENSION_MISSING));
@@ -348,13 +462,13 @@ public class GenericImportServiceImpl implements GenericImportService {
         return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
     }
 
-    private String buildErrorFileName(String originalFileName, String extension) {
+    private String buildResultFileName(String originalFileName, String extension) {
         String safeName = (originalFileName == null || originalFileName.isBlank())
                 ? "import-file"
                 : originalFileName;
         int dotIndex = safeName.lastIndexOf('.');
         String baseName = dotIndex > 0 ? safeName.substring(0, dotIndex) : safeName;
-        return baseName + "-errors." + extension;
+        return baseName + "-result." + extension;
     }
 
     private String normalize(String value) {
@@ -363,6 +477,42 @@ public class GenericImportServiceImpl implements GenericImportService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private String joinMessages(List<String> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return "";
+        }
+        return messages.stream()
+                .filter(message -> message != null && !message.isBlank())
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.joining("; "));
+    }
+
+    private List<String> splitMessages(String message) {
+        if (message == null || message.isBlank()) {
+            return List.of(getMessage(Constants.MessageKey.IMPORT_PERSIST_GENERIC_ERROR));
+        }
+        return Arrays.stream(message.split(";"))
+                .map(String::trim)
+                .filter(text -> !text.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private String messageOrDefault(String value, String defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return value.trim();
+    }
+
+    private boolean isWarningStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return false;
+        }
+        return status.trim().toUpperCase(Locale.ROOT).startsWith(WARNING_STATUS);
     }
 
     private void addRowErrors(Map<Long, List<String>> rowErrors, long rowNumber, List<String> errorsToAdd) {
@@ -424,5 +574,8 @@ public class GenericImportServiceImpl implements GenericImportService {
     }
 
     private record ValidRow<T>(long rowNumber, T dto) {
+    }
+
+    private record PersistSummary(int successCount, int warningCount) {
     }
 }

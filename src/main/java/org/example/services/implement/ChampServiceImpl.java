@@ -127,8 +127,14 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     @Transactional
     public ChampResponse create(CreateChampRequest request) {
         filterUtil.enableDeletedFilter();
-        if (champRepository.existsBySlug(request.getSlug())) {
+        String resolvedCode = resolveTargetCode(request.getCode(), request.getSlug(), null, null);
+        request.setCode(resolvedCode);
+
+        if (champRepository.existsBySlugIncludingDeleted(request.getSlug())) {
             throw new ConflictException(Constants.MessageKey.CHAMP_SLUG_EXISTS, request.getSlug());
+        }
+        if (champRepository.existsByCodeIncludingDeleted(resolvedCode)) {
+            throw new ConflictException(Constants.MessageKey.CHAMP_CODE_EXISTS, resolvedCode);
         }
         Sets sets = setsRepository.findById(request.getSetId())
                 .orElseThrow(() -> {
@@ -152,35 +158,13 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     @Override
     @Transactional
     public ChampResponse update(Long id, UpdateChampRequest request) {
-        log.info("[CHAMP] Updating champ id: {}", id);
-        filterUtil.enableDeletedFilter();
+        return updateInternal(id, request, false);
+    }
 
-        Champ champ = champRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        Constants.MessageKey.ERROR_NOT_FOUND,
-                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
-                ));
-
-        if (request.getSlug() != null && !request.getSlug().equals(champ.getSlug())
-                && champRepository.existsBySlugAndIdNot(request.getSlug(), id)) {
-            log.warn("[CHAMP] Update failed: Slug {} already taken by another record", request.getSlug());
-            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, request.getSlug());
-        }
-
-        String oldImageUrl = champ.getImageUrl();
-
-        Long targetSetId = resolveTargetSetId(request, champ);
-        if (!Objects.equals(targetSetId, champ.getSets().getId())) {
-            Sets targetSet = getOrThrowSet(targetSetId);
-            champ.setSets(targetSet);
-        }
-
-        champMapper.updateEntity(request, champ);
-        syncChampTraits(champ, targetSetId, request.getTraitIds());
-        deleteObsoleteManagedImage(oldImageUrl, champ.getImageUrl());
-
-        log.info("[CHAMP] Updated successfully id={} by user={}", id, getCurrentUserNameOrThrow());
-        return toResponse(champ);
+    @Override
+    @Transactional
+    public ChampResponse updateForImport(Long id, UpdateChampRequest request) {
+        return updateInternal(id, request, true);
     }
 
     @Override
@@ -362,8 +346,99 @@ public class ChampServiceImpl extends BaseService implements ChampService {
                 .build();
     }
 
+    private ChampResponse updateInternal(Long id, UpdateChampRequest request, boolean includeDeleted) {
+        log.info("[CHAMP] Updating champ id: {} includeDeleted={}", id, includeDeleted);
+        if (includeDeleted) {
+            filterUtil.disableDeletedFilter();
+        } else {
+            filterUtil.enableDeletedFilter();
+        }
+
+        Champ champ = champRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        Constants.MessageKey.ERROR_NOT_FOUND,
+                        new Object[]{Constants.MessageKey.ENTITY_CHAMP}
+                ));
+
+        if (includeDeleted && champ.isDeleted()) {
+            champ.setDeleted(false);
+        }
+
+        String targetSlug = normalizeText(request.getSlug());
+        if (targetSlug != null) {
+            request.setSlug(targetSlug);
+        }
+        if (targetSlug != null && !targetSlug.equalsIgnoreCase(champ.getSlug())
+                && champRepository.existsBySlugAndIdNotIncludingDeleted(targetSlug, id)) {
+            log.warn("[CHAMP] Update failed: Slug {} already taken by another record", targetSlug);
+            throw new ConflictException(Constants.MessageKey.ERROR_ALREADY_EXISTS, targetSlug);
+        }
+
+        String targetCode = resolveTargetCode(
+                request.getCode(),
+                targetSlug != null ? targetSlug : request.getSlug(),
+                champ.getCode(),
+                champ.getSlug()
+        );
+        if (targetCode != null && !targetCode.equalsIgnoreCase(champ.getCode())
+                && champRepository.existsByCodeAndIdNotIncludingDeleted(targetCode, id)) {
+            log.warn("[CHAMP] Update failed: Code {} already taken by another record", targetCode);
+            throw new ConflictException(Constants.MessageKey.CHAMP_CODE_EXISTS, targetCode);
+        }
+        request.setCode(targetCode);
+
+        String oldImageUrl = champ.getImageUrl();
+
+        Long targetSetId = resolveTargetSetId(request, champ);
+        Long currentSetId = champ.getSets() != null ? champ.getSets().getId() : null;
+        if (!Objects.equals(targetSetId, currentSetId)) {
+            if (targetSetId == null) {
+                champ.setSets(null);
+            } else {
+                Sets targetSet = getOrThrowSet(targetSetId);
+                champ.setSets(targetSet);
+            }
+        }
+
+        champMapper.updateEntity(request, champ);
+        syncChampTraits(champ, targetSetId, request.getTraitIds());
+        deleteObsoleteManagedImage(oldImageUrl, champ.getImageUrl());
+
+        log.info("[CHAMP] Updated successfully id={} by user={}", id, getCurrentUserNameOrThrow());
+        return toResponse(champ);
+    }
+
     private Long resolveTargetSetId(UpdateChampRequest request, Champ champ) {
-        return request.getSetId() != null ? request.getSetId() : champ.getSets().getId();
+        if (request.getSetId() != null) {
+            return request.getSetId();
+        }
+        return champ.getSets() != null ? champ.getSets().getId() : null;
+    }
+
+    private String resolveTargetCode(String requestedCode, String requestedSlug, String currentCode, String currentSlug) {
+        String normalizedRequestedCode = normalizeText(requestedCode);
+        if (normalizedRequestedCode != null) {
+            return normalizedRequestedCode;
+        }
+
+        String normalizedCurrentCode = normalizeText(currentCode);
+        if (normalizedCurrentCode != null) {
+            return normalizedCurrentCode;
+        }
+
+        String normalizedRequestedSlug = normalizeText(requestedSlug);
+        if (normalizedRequestedSlug != null) {
+            return normalizedRequestedSlug;
+        }
+
+        return normalizeText(currentSlug);
+    }
+
+    private String normalizeText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
     }
 
     private Sets getOrThrowSet(Long setId) {

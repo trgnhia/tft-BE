@@ -24,6 +24,10 @@ public class  UpdateChampRequest {
     @Pattern(regexp = "^[a-z0-9-]+$", message = "{" + Constants.MessageKey.CHAMP_SLUG_PATTERN + "}")
     private String slug;
 
+    @Size(max = 100, message = "{" + Constants.MessageKey.CHAMP_CODE_SIZE + "}")
+    @Pattern(regexp = "^[A-Za-z0-9_-]+$", message = "{" + Constants.MessageKey.CHAMP_CODE_PATTERN + "}")
+    private String code;
+
     @Size(max = 255, message = "{" + Constants.MessageKey.CHAMP_NAME_SIZE + "}")
     private String name;
 

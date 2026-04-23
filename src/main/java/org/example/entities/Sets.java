@@ -13,6 +13,8 @@ import org.example.common.entity.AuditableEntity;
 public class
 Sets extends AuditableEntity {
     @Column(nullable = false, length = 100)
+    private String code;
+    @Column(nullable = false, length = 100)
     private String name;
     @Column (nullable = false, length = 100)
     private String description;

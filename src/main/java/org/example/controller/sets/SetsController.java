@@ -1,13 +1,11 @@
 package org.example.controller.sets;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.example.core.api.ApiResponse;
-import org.example.dto.sets.SetsRequest;
+import org.example.dto.sets.SetOptionResponse;
 import org.example.dto.sets.SetsResponse;
 import org.example.services.SetsService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,5 +20,10 @@ public class SetsController {
     public ResponseEntity<ApiResponse<List<SetsResponse>>> getAllPublishedSet() {
         List<SetsResponse> response = setsService.getAllPublishedSet();
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/options")
+    public ResponseEntity<ApiResponse<List<SetOptionResponse>>> getSetOptions() {
+        return ResponseEntity.ok(ApiResponse.success(setsService.getSetOptions()));
     }
 }

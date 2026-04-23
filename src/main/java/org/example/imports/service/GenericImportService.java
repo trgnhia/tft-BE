@@ -9,4 +9,10 @@ public interface GenericImportService {
             Class<T> dtoClass,
             ImportRowPersister<T> rowPersister
     );
+
+    <T> ImportExecutionResult importFileWithOutcome(
+            MultipartFile file,
+            Class<T> dtoClass,
+            ImportRowPersisterWithOutcome<T> rowPersister
+    );
 }

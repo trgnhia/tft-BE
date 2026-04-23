@@ -87,6 +87,10 @@ public final class Constants {
         public static final String CHAMP_SLUG_NOT_BLANK = "champ.slug.not_blank";
         public static final String CHAMP_SLUG_SIZE = "champ.slug.size";
         public static final String CHAMP_SLUG_PATTERN = "champ.slug.pattern";
+        public static final String CHAMP_CODE_NOT_BLANK = "champ.code.not_blank";
+        public static final String CHAMP_CODE_SIZE = "champ.code.size";
+        public static final String CHAMP_CODE_PATTERN = "champ.code.pattern";
+        public static final String CHAMP_CODE_EXISTS = "champ.code.already_exists";
         public static final String CHAMP_NAME_NOT_BLANK = "champ.name.not_blank";
         public static final String CHAMP_NAME_SIZE = "champ.name.size";
         public static final String CHAMP_IMAGE_URL_SIZE = "champ.imageUrl.size";

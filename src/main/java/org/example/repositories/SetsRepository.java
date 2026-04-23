@@ -12,13 +12,18 @@ import java.util.List;
 public interface SetsRepository extends JpaRepository<Sets, Long> {
     boolean existsByName (String name);
     boolean existsByNameAndIdNot (String name, Long id);
+    boolean existsByCodeIgnoreCase(String code);
+    boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
     List<Sets> findAllByDeletedFalse();
+    List<Sets> findAllByDeletedFalseOrderByNameAsc();
+    List<Sets> findAllByOrderByNameAsc();
     @Query("""
     select s from Sets s
     where (:deleted is null or s.deleted = :deleted)
       and (
             :keyword = '' 
             or lower(s.name) like lower(concat('%', :keyword, '%'))
+            or lower(coalesce(s.code, '')) like lower(concat('%', :keyword, '%'))
             or lower(coalesce(s.description, '')) like lower(concat('%', :keyword, '%'))
       )
 """)

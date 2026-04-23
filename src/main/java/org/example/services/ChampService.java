@@ -19,6 +19,7 @@ public interface ChampService {
     // editor
     ChampResponse create(CreateChampRequest request);
     ChampResponse update(Long id, UpdateChampRequest request);
+    ChampResponse updateForImport(Long id, UpdateChampRequest request);
     void delete(Long id);
 
     List<ChampResponse> bulkCreate(BulkCreateRequest request);

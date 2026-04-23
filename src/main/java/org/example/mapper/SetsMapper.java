@@ -21,6 +21,7 @@ public interface SetsMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "code", ignore = true)
     Sets toEntity(SetsRequest request);
 
     @Mapping(target = "id", ignore = true)
@@ -28,5 +29,6 @@ public interface SetsMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "code", ignore = true)
     void updateEntity(SetsRequest request, @MappingTarget Sets entity);
 }

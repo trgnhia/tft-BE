@@ -32,6 +32,11 @@ public class ChampSpecification {
             if (filter.getSetId() != null) {
                 predicates.add(cb.equal(root.get("sets").get("id"), filter.getSetId()));
             }
+            if (Boolean.TRUE.equals(filter.getUnassignedSet())) {
+                predicates.add(cb.isNull(root.get("sets")));
+            } else if (Boolean.FALSE.equals(filter.getUnassignedSet())) {
+                predicates.add(cb.isNotNull(root.get("sets")));
+            }
             if (filter.getCost() != null) {
                 predicates.add(cb.equal(root.get("cost"), filter.getCost()));
             }
