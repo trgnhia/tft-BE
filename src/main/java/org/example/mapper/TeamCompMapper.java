@@ -18,6 +18,10 @@ public interface TeamCompMapper {
     @Mapping(target = "updatedAt", source = "updatedAt", dateFormat = "yyyy-MM-dd HH:mm:ss")
     TeamCompResponse toResponse(TeamComp entity);
 
+
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "name", source = "name")
+    @Mapping(target = "deleted", source = "deleted")
     TeamCompResponse.SetSimpleDto toSetSimpleDto(Sets sets);
 
     @Mapping(target = "id", source = "champ.id")
@@ -49,6 +53,7 @@ public interface TeamCompMapper {
         }
     }
 
+    @Named("slugGenerator")
     default String generateSlug(String name) {
         if (name == null || name.isBlank()) return null;
         return name.toLowerCase().replaceAll("\\s+", "-");
