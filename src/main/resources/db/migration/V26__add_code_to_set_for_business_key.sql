@@ -12,7 +12,7 @@ END $$;
 
 UPDATE "set"
 SET code = btrim(code)
-WHERE code IS NOT NULL;etch
+WHERE code IS NOT NULL;
 
 UPDATE "set" s
 SET code = CASE
