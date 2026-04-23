@@ -85,6 +85,15 @@ public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecific
     List<Trait> findAllActiveForDropdown(@Param("setId") Long setId);
 
     @Query(value = """
+            SELECT DISTINCT TRIM(t.type)
+            FROM traits t
+            WHERE t.type IS NOT NULL
+              AND TRIM(t.type) <> ''
+            ORDER BY LOWER(TRIM(t.type))
+            """, nativeQuery = true)
+    List<String> findDistinctTypesForCms();
+
+    @Query(value = """
     SELECT t.* FROM traits t
     LEFT JOIN "set" s ON t.set_id = s.id
     WHERE (:keyword IS NULL

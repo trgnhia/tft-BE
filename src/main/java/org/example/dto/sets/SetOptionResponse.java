@@ -13,5 +13,6 @@ import lombok.Setter;
 @Builder
 public class SetOptionResponse {
     private Long id;
+    private String code;
     private String name;
 }

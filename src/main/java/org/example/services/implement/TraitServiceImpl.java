@@ -26,7 +26,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 @Service
@@ -165,6 +167,24 @@ public class TraitServiceImpl extends BaseService implements TraitService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAvailableTypes() {
+        log.info("[TRAIT] getAvailableTypes");
+        LinkedHashMap<String, String> deduplicated = new LinkedHashMap<>();
+        for (String type : traitRepository.findDistinctTypesForCms()) {
+            if (type == null) {
+                continue;
+            }
+            String trimmed = type.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            deduplicated.putIfAbsent(trimmed.toLowerCase(Locale.ROOT), trimmed);
+        }
+        return deduplicated.values().stream().toList();
     }
 
     @Override

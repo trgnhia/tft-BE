@@ -24,7 +24,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -89,6 +93,7 @@ public class SetsServiceImpl implements SetsService {
 
         Sets sets = setsMapper.toEntity(request);
         sets.setName(normalizedName);
+        sets.setCode(generateUniqueSetCode(normalizedName, null));
         Sets savedSets = setRepo.save(sets);
 
         notificationService.createAndBroadcast(
@@ -114,6 +119,9 @@ public class SetsServiceImpl implements SetsService {
 
         setsMapper.updateEntity(request, existingSet);
         existingSet.setName(normalizedName);
+        if (!StringUtils.hasText(existingSet.getCode())) {
+            existingSet.setCode(generateUniqueSetCode(normalizedName, id));
+        }
 
         Sets updatedSet = setRepo.save(existingSet);
         return setsMapper.toSetsResponse(updatedSet);
@@ -173,6 +181,47 @@ public class SetsServiceImpl implements SetsService {
         return name.trim();
     }
 
+    private String generateUniqueSetCode(String name, Long excludeId) {
+        String baseCode = deriveSetCodeFromName(name);
+        String candidate = baseCode;
+        int suffix = 2;
+
+        while (isCodeInUse(candidate, excludeId)) {
+            String suffixText = "-" + suffix++;
+            int maxBaseLength = Math.max(1, 100 - suffixText.length());
+            String shortenedBase = baseCode.length() > maxBaseLength
+                    ? baseCode.substring(0, maxBaseLength)
+                    : baseCode;
+            candidate = shortenedBase + suffixText;
+        }
+
+        return candidate;
+    }
+
+    private boolean isCodeInUse(String code, Long excludeId) {
+        if (excludeId == null) {
+            return setRepo.existsByCodeIgnoreCase(code);
+        }
+        return setRepo.existsByCodeIgnoreCaseAndIdNot(code, excludeId);
+    }
+
+    private String deriveSetCodeFromName(String name) {
+        if (!StringUtils.hasText(name)) {
+            return "set";
+        }
+
+        String normalized = Normalizer.normalize(name.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+
+        if (!StringUtils.hasText(normalized)) {
+            return "set";
+        }
+
+        return normalized.length() > 100 ? normalized.substring(0, 100) : normalized;
+    }
 
     private void validateDuplicateNameForUpdate(String name, Long id) {
         if (setRepo.existsByNameAndIdNot(name, id)) {
@@ -187,6 +236,7 @@ public class SetsServiceImpl implements SetsService {
     private SetOptionResponse toSetOption(Sets set) {
         return SetOptionResponse.builder()
                 .id(set.getId())
+                .code(set.getCode())
                 .name(set.getName())
                 .build();
     }

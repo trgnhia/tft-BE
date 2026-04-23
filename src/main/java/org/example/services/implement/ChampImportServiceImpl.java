@@ -10,6 +10,9 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.Comment;
 import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationConstraint;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
@@ -20,6 +23,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.example.dto.champs.ChampImportDto;
 import org.example.dto.champs.ChampImportTemplateFile;
@@ -691,15 +695,16 @@ public class ChampImportServiceImpl implements ChampImportService {
     private byte[] buildXlsxTemplate() throws IOException {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            writeTemplateSheet(workbook);
+            Sheet templateSheet = writeTemplateSheet(workbook);
             writeGuideSheet(workbook);
-            writeReferenceSheet(workbook);
+            ReferenceSheetMetadata referenceSheetMetadata = writeReferenceSheet(workbook);
+            applySetCodeDropdownValidation(templateSheet, referenceSheetMetadata);
             workbook.write(outputStream);
             return outputStream.toByteArray();
         }
     }
 
-    private void writeTemplateSheet(Workbook workbook) {
+    private Sheet writeTemplateSheet(Workbook workbook) {
         Sheet templateSheet = workbook.createSheet(text("champ.import.template.sheet.template", TEMPLATE_SHEET_NAME_DEFAULT));
         Row headerRow = templateSheet.createRow(0);
         headerRow.setHeightInPoints(TEMPLATE_HEADER_ROW_HEIGHT);
@@ -722,6 +727,7 @@ public class ChampImportServiceImpl implements ChampImportService {
 
         templateSheet.createFreezePane(0, 1);
         templateSheet.setAutoFilter(new CellRangeAddress(0, 0, 0, TEMPLATE_HEADERS.size() - 1));
+        return templateSheet;
     }
 
     private CellStyle createTemplateHeaderStyle(Workbook workbook) {
@@ -796,6 +802,42 @@ public class ChampImportServiceImpl implements ChampImportService {
         cell.setCellComment(comment);
     }
 
+    private void applySetCodeDropdownValidation(Sheet templateSheet, ReferenceSheetMetadata referenceSheetMetadata) {
+        if (templateSheet == null || referenceSheetMetadata == null) {
+            return;
+        }
+
+        int setCodeColumnIndex = TEMPLATE_HEADERS.indexOf(ChampImportDto.COL_SET_CODE);
+        if (setCodeColumnIndex < 0) {
+            return;
+        }
+
+        String quotedReferenceSheetName = quoteSheetName(referenceSheetMetadata.sheetName());
+        String formula = quotedReferenceSheetName
+                + "!$A$" + referenceSheetMetadata.setCodeStartExcelRow()
+                + ":$A$" + referenceSheetMetadata.setCodeEndExcelRow();
+
+        DataValidationHelper validationHelper = templateSheet.getDataValidationHelper();
+        DataValidationConstraint validationConstraint = validationHelper.createFormulaListConstraint(formula);
+        CellRangeAddressList addressList = new CellRangeAddressList(1, 5000, setCodeColumnIndex, setCodeColumnIndex);
+        DataValidation validation = validationHelper.createValidation(validationConstraint, addressList);
+        validation.setShowErrorBox(true);
+        validation.createErrorBox(
+                text("champ.import.template.validation.set_code.error_title", "Invalid Set Code"),
+                text("champ.import.template.validation.set_code.error_message", "Please choose setCode from Reference sheet.")
+        );
+        validation.createPromptBox(
+                text("champ.import.template.validation.set_code.prompt_title", "Set Code"),
+                text("champ.import.template.validation.set_code.prompt_message", "Select setCode from the dropdown list.")
+        );
+        templateSheet.addValidationData(validation);
+    }
+
+    private String quoteSheetName(String sheetName) {
+        String escaped = sheetName.replace("'", "''");
+        return "'" + escaped + "'";
+    }
+
     private void writeGuideSheet(Workbook workbook) {
         Sheet guideSheet = workbook.createSheet(text("champ.import.template.sheet.guide", GUIDE_SHEET_NAME_DEFAULT));
         Row header = guideSheet.createRow(0);
@@ -828,8 +870,9 @@ public class ChampImportServiceImpl implements ChampImportService {
         guideSheet.setColumnWidth(3, 40 * 256);
     }
 
-    private void writeReferenceSheet(Workbook workbook) {
-        Sheet referenceSheet = workbook.createSheet(text("champ.import.template.sheet.reference", REFERENCE_SHEET_NAME_DEFAULT));
+    private ReferenceSheetMetadata writeReferenceSheet(Workbook workbook) {
+        String referenceSheetName = text("champ.import.template.sheet.reference", REFERENCE_SHEET_NAME_DEFAULT);
+        Sheet referenceSheet = workbook.createSheet(referenceSheetName);
         List<Sets> sets = setsRepository.findAll();
         List<SetCodeMapping> setCodeMappings = buildSetCodeMappings(sets);
         Map<Long, String> setCodeById = setCodeMappings.stream()
@@ -842,19 +885,23 @@ public class ChampImportServiceImpl implements ChampImportService {
         Row setHeader = referenceSheet.createRow(rowIndex++);
         setHeader.createCell(0).setCellValue(text("champ.import.template.reference.sets.columns.set_code", "setCode"));
         setHeader.createCell(1).setCellValue(text("champ.import.template.reference.sets.columns.set_name", "setName"));
-        setHeader.createCell(2).setCellValue(text("champ.import.template.reference.sets.columns.status", "status"));
+        setHeader.createCell(2).setCellValue(text("champ.import.template.reference.sets.columns.set_id", "setId"));
+        setHeader.createCell(3).setCellValue(text("champ.import.template.reference.sets.columns.status", "status"));
 
         List<SetCodeMapping> sortedSetMappings = setCodeMappings.stream()
                 .sorted(Comparator.comparing(mapping -> mapping.set().getName(), String.CASE_INSENSITIVE_ORDER))
                 .toList();
+        int setCodeStartExcelRow = rowIndex + 1; // excel row index starts at 1
         for (SetCodeMapping mapping : sortedSetMappings) {
             Row row = referenceSheet.createRow(rowIndex++);
             row.createCell(0).setCellValue(mapping.setCode());
             row.createCell(1).setCellValue(mapping.set().getName());
-            row.createCell(2).setCellValue(mapping.set().isDeleted()
+            row.createCell(2).setCellValue(mapping.set().getId());
+            row.createCell(3).setCellValue(mapping.set().isDeleted()
                     ? text("champ.import.template.reference.sets.status.inactive", "INACTIVE")
                     : text("champ.import.template.reference.sets.status.active", "ACTIVE"));
         }
+        int setCodeEndExcelRow = Math.max(setCodeStartExcelRow, rowIndex);
 
         rowIndex += 2;
 
@@ -882,26 +929,20 @@ public class ChampImportServiceImpl implements ChampImportService {
         referenceSheet.setColumnWidth(1, 30 * 256);
         referenceSheet.setColumnWidth(2, 24 * 256);
         referenceSheet.setColumnWidth(3, 30 * 256);
+        return new ReferenceSheetMetadata(referenceSheetName, setCodeStartExcelRow, setCodeEndExcelRow);
     }
 
     private List<SetCodeMapping> buildSetCodeMappings(List<Sets> sets) {
-        Map<String, List<Sets>> grouped = sets.stream()
-                .collect(Collectors.groupingBy(set -> deriveSetCode(set.getName())));
+        return sets.stream()
+                .map(set -> new SetCodeMapping(resolveSetCodeForReference(set), set))
+                .toList();
+    }
 
-        List<SetCodeMapping> mappings = new ArrayList<>();
-        for (Map.Entry<String, List<Sets>> entry : grouped.entrySet()) {
-            String baseCode = entry.getKey();
-            List<Sets> mappedSets = entry.getValue();
-            if (mappedSets.size() == 1) {
-                mappings.add(new SetCodeMapping(baseCode, mappedSets.get(0)));
-                continue;
-            }
-            for (Sets set : mappedSets) {
-                mappings.add(new SetCodeMapping(baseCode + "-" + set.getId(), set));
-            }
+    private String resolveSetCodeForReference(Sets set) {
+        if (set != null && StringUtils.hasText(set.getCode())) {
+            return set.getCode().trim();
         }
-
-        return mappings;
+        return deriveSetCode(set == null ? null : set.getName());
     }
 
     private String deriveSetCode(String setName) {
@@ -959,6 +1000,13 @@ public class ChampImportServiceImpl implements ChampImportService {
             String formatFallback,
             String exampleKey,
             String exampleFallback
+    ) {
+    }
+
+    private record ReferenceSheetMetadata(
+            String sheetName,
+            int setCodeStartExcelRow,
+            int setCodeEndExcelRow
     ) {
     }
 
