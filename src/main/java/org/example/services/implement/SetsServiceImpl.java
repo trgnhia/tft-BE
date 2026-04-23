@@ -9,6 +9,7 @@ import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
 import org.example.dto.notification.NotificationCreateCommand;
+import org.example.dto.sets.SetOptionResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.entities.Sets;
@@ -39,6 +40,20 @@ public class SetsServiceImpl implements SetsService {
     public List<SetsResponse> getAllPublishedSet() {
         List<Sets> sets = setRepo.findAllByDeletedFalse();
         return setsMapper.toListSetsResponse(sets);
+    }
+
+    @Override
+    public List<SetOptionResponse> getSetOptions() {
+        return setRepo.findAllByDeletedFalseOrderByNameAsc().stream()
+                .map(this::toSetOption)
+                .toList();
+    }
+
+    @Override
+    public List<SetOptionResponse> getSetOptionsForCms() {
+        return setRepo.findAllByOrderByNameAsc().stream()
+                .map(this::toSetOption)
+                .toList();
     }
 
     // ---------- CMS SERVICES ----------
@@ -167,5 +182,12 @@ public class SetsServiceImpl implements SetsService {
                     name
             );
         }
+    }
+
+    private SetOptionResponse toSetOption(Sets set) {
+        return SetOptionResponse.builder()
+                .id(set.getId())
+                .name(set.getName())
+                .build();
     }
 }

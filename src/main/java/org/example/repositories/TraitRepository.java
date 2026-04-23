@@ -85,26 +85,76 @@ public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecific
     List<Trait> findAllActiveForDropdown(@Param("setId") Long setId);
 
     @Query(value = """
-    SELECT * FROM traits t
-    WHERE (:keyword IS NULL 
-        OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) 
+    SELECT t.* FROM traits t
+    LEFT JOIN "set" s ON t.set_id = s.id
+    WHERE (:keyword IS NULL
+        OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
         OR LOWER(t.slug) LIKE LOWER(CONCAT('%', :keyword, '%')))
-    AND (:type IS NULL OR LOWER(t.type) = LOWER(:type))
-    AND (:setId IS NULL OR t.set_id = :setId)
+      AND (:type IS NULL OR LOWER(t.type) = LOWER(:type))
+      AND (
+          (:applySetIds = true AND t.set_id IN (:setIds))
+          OR (:applySetIds = false AND :setId IS NULL)
+          OR (:applySetIds = false AND :setId IS NOT NULL AND t.set_id = :setId)
+      )
+      AND (
+          :status IS NULL
+          OR (UPPER(:status) = 'ACTIVE' AND t.deleted = false)
+          OR (UPPER(:status) = 'INACTIVE' AND t.deleted = true)
+      )
+      AND (
+          :restorable IS NULL
+          OR (
+              :restorable = true
+              AND t.deleted = true
+              AND COALESCE(s.deleted, false) = false
+          )
+          OR (
+              :restorable = false
+              AND t.deleted = true
+              AND COALESCE(s.deleted, false) = true
+          )
+      )
     """,
             countQuery = """
     SELECT count(*) FROM traits t
-    WHERE (:keyword IS NULL 
-        OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) 
+    LEFT JOIN "set" s ON t.set_id = s.id
+    WHERE (:keyword IS NULL
+        OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
         OR LOWER(t.slug) LIKE LOWER(CONCAT('%', :keyword, '%')))
-    AND (:type IS NULL OR LOWER(t.type) = LOWER(:type))
-    AND (:setId IS NULL OR t.set_id = :setId)
+      AND (:type IS NULL OR LOWER(t.type) = LOWER(:type))
+      AND (
+          (:applySetIds = true AND t.set_id IN (:setIds))
+          OR (:applySetIds = false AND :setId IS NULL)
+          OR (:applySetIds = false AND :setId IS NOT NULL AND t.set_id = :setId)
+      )
+      AND (
+          :status IS NULL
+          OR (UPPER(:status) = 'ACTIVE' AND t.deleted = false)
+          OR (UPPER(:status) = 'INACTIVE' AND t.deleted = true)
+      )
+      AND (
+          :restorable IS NULL
+          OR (
+              :restorable = true
+              AND t.deleted = true
+              AND COALESCE(s.deleted, false) = false
+          )
+          OR (
+              :restorable = false
+              AND t.deleted = true
+              AND COALESCE(s.deleted, false) = true
+          )
+      )
     """,
             nativeQuery = true)
     Page<Trait> searchAdminIncludeDeleted(
             @Param("keyword") String keyword,
             @Param("type") String type,
+            @Param("applySetIds") boolean applySetIds,
+            @Param("setIds") List<Long> setIds,
             @Param("setId") Long setId,
+            @Param("status") String status,
+            @Param("restorable") Boolean restorable,
             Pageable pageable
     );
 

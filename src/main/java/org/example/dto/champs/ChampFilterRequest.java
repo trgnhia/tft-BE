@@ -11,4 +11,5 @@ public class ChampFilterRequest {
     private String trait;          // filter theo trait/origin
     private String tier;           // filter theo tier (S, A, B...)
     private Boolean deleted;
+    private Boolean unassignedSet; // true => set_id is null
 }

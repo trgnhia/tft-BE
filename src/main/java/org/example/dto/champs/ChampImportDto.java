@@ -12,7 +12,7 @@ import org.example.common.constant.Constants;
 @NoArgsConstructor
 public class ChampImportDto {
 
-    public static final String COL_SET_ID = "Set Id";
+    public static final String COL_SET_CODE = "Set Code";
     public static final String COL_CODE = "Code";
     public static final String COL_NAME = "Name";
     public static final String COL_SLUG = "Slug";
@@ -28,9 +28,9 @@ public class ChampImportDto {
     public static final String COL_TRAIT_NAMES = "Trait Names";
     public static final String COL_IMAGE_URL = "Image Url";
 
-    @ImportColumn(name = COL_SET_ID, required = true)
-    @NotNull(message = "{" + Constants.MessageKey.CHAMP_SET_ID_NOT_NULL + "}")
-    private Long setId;
+    @ImportColumn(name = COL_SET_CODE)
+    @Size(max = 100, message = "{champ.import.set_code.size}")
+    private String setCode;
 
     @ImportColumn(name = COL_CODE, required = true)
     @NotBlank(message = "{" + Constants.MessageKey.CHAMP_CODE_NOT_BLANK + "}")
@@ -56,45 +56,45 @@ public class ChampImportDto {
     private Integer cost;
 
     @ImportColumn(name = COL_HP, required = true)
-    @NotBlank(message = "HP is required")
+    @NotBlank(message = "{champ.import.hp.required}")
     private String hp;
 
     @ImportColumn(name = COL_AD, required = true)
-    @NotBlank(message = "AD is required")
+    @NotBlank(message = "{champ.import.ad.required}")
     private String ad;
 
     @ImportColumn(name = COL_ARMOR, required = true)
-    @NotNull(message = "Armor is required")
+    @NotNull(message = "{champ.import.armor.required}")
     @Min(value = 0, message = "{" + Constants.MessageKey.CHAMP_STATS_ARMOR_MIN + "}")
     private Integer armor;
 
     @ImportColumn(name = COL_RANGE, required = true)
-    @NotNull(message = "Range is required")
+    @NotNull(message = "{champ.import.range.required}")
     @Min(value = 1, message = "{" + Constants.MessageKey.CHAMP_STATS_RANGE_MIN + "}")
     private Integer range;
 
     @ImportColumn(name = COL_MAGIC_RESIST, required = true)
-    @NotNull(message = "Magic Resist is required")
+    @NotNull(message = "{champ.import.magic_resist.required}")
     @Min(value = 0, message = "{" + Constants.MessageKey.CHAMP_STATS_MAGIC_RESIST_MIN + "}")
     private Integer magicResist;
 
     @ImportColumn(name = COL_ATTACK_SPEED, required = true)
-    @NotNull(message = "Attack Speed is required")
+    @NotNull(message = "{champ.import.attack_speed.required}")
     @DecimalMin(value = "0.1", message = "{" + Constants.MessageKey.CHAMP_STATS_ATTACK_SPEED_MIN + "}")
     private Double attackSpeed;
 
     @ImportColumn(name = COL_CRIT_CHANCE, required = true)
-    @NotNull(message = "Crit Chance is required")
+    @NotNull(message = "{champ.import.crit_chance.required}")
     @DecimalMin(value = "0.0", message = "{" + Constants.MessageKey.CHAMP_STATS_CRIT_CHANCE_MIN + "}")
     @DecimalMax(value = "1.0", message = "{" + Constants.MessageKey.CHAMP_STATS_CRIT_CHANCE_MAX + "}")
     private Double critChance;
 
     @ImportColumn(name = COL_TRAIT_SLUGS)
-    @Size(max = 1000, message = "Trait Slugs must not exceed 1000 characters")
+    @Size(max = 1000, message = "{champ.import.trait_slugs.size}")
     private String traitSlugs;
 
     @ImportColumn(name = COL_TRAIT_NAMES)
-    @Size(max = 1000, message = "Trait Names must not exceed 1000 characters")
+    @Size(max = 1000, message = "{champ.import.trait_names.size}")
     private String traitNames;
 
     @ImportColumn(name = COL_IMAGE_URL)

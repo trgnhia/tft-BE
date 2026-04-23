@@ -390,9 +390,14 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         String oldImageUrl = champ.getImageUrl();
 
         Long targetSetId = resolveTargetSetId(request, champ);
-        if (!Objects.equals(targetSetId, champ.getSets().getId())) {
-            Sets targetSet = getOrThrowSet(targetSetId);
-            champ.setSets(targetSet);
+        Long currentSetId = champ.getSets() != null ? champ.getSets().getId() : null;
+        if (!Objects.equals(targetSetId, currentSetId)) {
+            if (targetSetId == null) {
+                champ.setSets(null);
+            } else {
+                Sets targetSet = getOrThrowSet(targetSetId);
+                champ.setSets(targetSet);
+            }
         }
 
         champMapper.updateEntity(request, champ);
@@ -404,7 +409,10 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     }
 
     private Long resolveTargetSetId(UpdateChampRequest request, Champ champ) {
-        return request.getSetId() != null ? request.getSetId() : champ.getSets().getId();
+        if (request.getSetId() != null) {
+            return request.getSetId();
+        }
+        return champ.getSets() != null ? champ.getSets().getId() : null;
     }
 
     private String resolveTargetCode(String requestedCode, String requestedSlug, String currentCode, String currentSlug) {

@@ -24,6 +24,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Base64;
+import java.util.Locale;
+import java.util.Set;
 
 import static org.example.util.MessageUtils.getMessage;
 
@@ -169,10 +172,24 @@ public class ChampCmsController {
         }
 
         ImportExecutionResult result = champImportService.importChamps(files.get(0));
+        int insertedRows = countByStatuses(result, Set.of("SUCCESS_INSERT", "WARNING_INSERT"));
+        int updatedRows = countByStatuses(result, Set.of("SUCCESS_UPDATE", "WARNING_UPDATE"));
+        int warningRows = result.warningCount();
+        int errorRows = result.failedCount();
+
+        String resultFileBase64 = null;
+        if (result.hasErrorFile()) {
+            resultFileBase64 = Base64.getEncoder().encodeToString(result.errorFileContent());
+        }
+
         ChampImportResultResponse body = ChampImportResultResponse.builder()
                 .totalRows(result.totalCount())
                 .successRows(result.successCount())
                 .failedRows(result.failedCount())
+                .insertedRows(insertedRows)
+                .updatedRows(updatedRows)
+                .warningRows(warningRows)
+                .errorRows(errorRows)
                 .message(result.message())
                 .rowErrors(result.rowErrors().stream()
                         .map(rowError -> ChampImportRowErrorResponse.builder()
@@ -180,10 +197,22 @@ public class ChampCmsController {
                                 .errors(rowError.errors())
                                 .build())
                         .toList())
+                .resultFileName(result.errorFileName())
+                .resultFileContentType(result.errorFileContentType())
+                .resultFileBase64(resultFileBase64)
                 .build();
 
         HttpStatus status = result.hasFailures() ? HttpStatus.MULTI_STATUS : HttpStatus.OK;
         return ResponseEntity.status(status).body(ApiResponse.success(body));
+    }
+
+    private int countByStatuses(ImportExecutionResult result, Set<String> statuses) {
+        if (result.rowReports() == null || result.rowReports().isEmpty()) {
+            return 0;
+        }
+        return (int) result.rowReports().stream()
+                .filter(report -> report.status() != null && statuses.contains(report.status().toUpperCase(Locale.ROOT)))
+                .count();
     }
 
     @GetMapping("/import/template")

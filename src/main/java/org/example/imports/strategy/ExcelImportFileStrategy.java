@@ -3,7 +3,9 @@ package org.example.imports.strategy;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.example.imports.model.ImportRow;
+import org.example.imports.model.ImportRowReport;
 import org.example.imports.model.ParsedImportFile;
+import org.example.imports.util.ImportHeaderUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -13,10 +15,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.example.util.MessageUtils.getMessage;
+
 @Component
 public class ExcelImportFileStrategy implements ImportFileStrategy {
 
-    private static final String ERROR_DETAILS = "Error Details";
+    private static final String STATUS_CANONICAL = "Status";
+    private static final String MESSAGE_CANONICAL = "Message";
+    private static final String RESULT_SHEET_DEFAULT = "Import Result";
 
     @Override
     public boolean supports(String extension) {
@@ -31,7 +37,7 @@ public class ExcelImportFileStrategy implements ImportFileStrategy {
 
             Row headerRow = sheet.getRow(firstRowNum);
             if (headerRow == null) {
-                throw new IllegalArgumentException("Excel file does not contain a header row.");
+                throw new IllegalArgumentException(getMessage("import.excel.error.missing_header_row"));
             }
 
             DataFormatter formatter = new DataFormatter();
@@ -44,20 +50,26 @@ public class ExcelImportFileStrategy implements ImportFileStrategy {
     }
 
     @Override
-    public byte[] buildErrorFile(ParsedImportFile parsedFile, Map<Long, String> errorsByRowNumber) throws IOException {
+    public byte[] buildResultFile(
+            ParsedImportFile parsedFile,
+            Map<Long, ImportRowReport> rowReportsByRowNumber
+    ) throws IOException {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            Sheet sheet = workbook.createSheet("Import Result");
-            List<String> headers = parsedFile.headers();
+            Sheet sheet = workbook.createSheet(resolveResultSheetName());
+            List<ColumnBinding> columns = resolveDataColumns(parsedFile.headers());
 
             Row headerRow = sheet.createRow(0);
-            for (int col = 0; col < headers.size(); col++) {
-                headerRow.createCell(col).setCellValue(headers.get(col));
+            for (int col = 0; col < columns.size(); col++) {
+                headerRow.createCell(col).setCellValue(columns.get(col).header());
             }
-            headerRow.createCell(headers.size()).setCellValue(ERROR_DETAILS);
+            int statusColumnIndex = columns.size();
+            int messageColumnIndex = statusColumnIndex + 1;
+            headerRow.createCell(statusColumnIndex).setCellValue(resolveStatusColumnHeader());
+            headerRow.createCell(messageColumnIndex).setCellValue(resolveMessageColumnHeader());
 
-            writeFailedRows(parsedFile, errorsByRowNumber, sheet, headers.size());
+            writeAllRows(parsedFile, rowReportsByRowNumber, sheet, columns, statusColumnIndex, messageColumnIndex);
 
             workbook.write(outputStream);
             return outputStream.toByteArray();
@@ -77,7 +89,7 @@ public class ExcelImportFileStrategy implements ImportFileStrategy {
     private int validateAndGetHeaderSize(Row headerRow) {
         int headerSize = headerRow.getLastCellNum();
         if (headerSize <= 0) {
-            throw new IllegalArgumentException("Excel header row is empty.");
+            throw new IllegalArgumentException(getMessage("import.excel.error.empty_header_row"));
         }
         return headerSize;
     }
@@ -115,22 +127,26 @@ public class ExcelImportFileStrategy implements ImportFileStrategy {
         return values;
     }
 
-    private void writeFailedRows(
+    private void writeAllRows(
             ParsedImportFile parsedFile,
-            Map<Long, String> errorsByRowNumber,
+            Map<Long, ImportRowReport> rowReportsByRowNumber,
             Sheet sheet,
-            int errorColumnIndex
+            List<ColumnBinding> columns,
+            int statusColumnIndex,
+            int messageColumnIndex
     ) {
         int rowIndex = 1;
         for (ImportRow sourceRow : parsedFile.rows()) {
-            String errorDetail = errorsByRowNumber.get(sourceRow.rowNumber());
-            if (errorDetail != null) {
-                Row targetRow = sheet.createRow(rowIndex++);
-                for (int col = 0; col < sourceRow.values().size(); col++) {
-                    targetRow.createCell(col).setCellValue(sourceRow.values().get(col));
-                }
-                targetRow.createCell(errorColumnIndex).setCellValue(errorDetail);
+            Row targetRow = sheet.createRow(rowIndex++);
+            for (int col = 0; col < columns.size(); col++) {
+                int sourceIndex = columns.get(col).index();
+                String value = sourceIndex < sourceRow.values().size() ? sourceRow.values().get(sourceIndex) : "";
+                targetRow.createCell(col).setCellValue(value == null ? "" : value);
             }
+
+            ImportRowReport report = rowReportsByRowNumber.get(sourceRow.rowNumber());
+            targetRow.createCell(statusColumnIndex).setCellValue(report != null ? localizeStatus(report.status()) : "");
+            targetRow.createCell(messageColumnIndex).setCellValue(report != null ? report.message() : "");
         }
     }
 
@@ -143,5 +159,68 @@ public class ExcelImportFileStrategy implements ImportFileStrategy {
             }
         }
         return true;
+    }
+
+    private List<ColumnBinding> resolveDataColumns(List<String> headers) {
+        List<ColumnBinding> columns = new ArrayList<>();
+        for (int i = 0; i < headers.size(); i++) {
+            String header = headers.get(i);
+            if (ImportHeaderUtils.isSystemResultColumn(header)) {
+                continue;
+            }
+            columns.add(new ColumnBinding(i, header));
+        }
+        return columns;
+    }
+
+    private String resolveResultSheetName() {
+        String key = "champ.import.result.sheet_name";
+        String resolved = getMessage(key);
+        return key.equals(resolved) ? RESULT_SHEET_DEFAULT : resolved;
+    }
+
+    private String resolveStatusColumnHeader() {
+        String key = "champ.import.result.columns.status";
+        String localized = getMessage(key);
+        if (key.equals(localized)) {
+            localized = STATUS_CANONICAL;
+        }
+        return ImportHeaderUtils.composeLocalizedHeader(STATUS_CANONICAL, localized);
+    }
+
+    private String resolveMessageColumnHeader() {
+        String key = "champ.import.result.columns.message";
+        String localized = getMessage(key);
+        if (key.equals(localized)) {
+            localized = MESSAGE_CANONICAL;
+        }
+        return ImportHeaderUtils.composeLocalizedHeader(MESSAGE_CANONICAL, localized);
+    }
+
+    private String localizeStatus(String statusCode) {
+        if (statusCode == null || statusCode.isBlank()) {
+            return "";
+        }
+
+        String normalized = statusCode.trim().toUpperCase();
+        String key = switch (normalized) {
+            case "SUCCESS_INSERT" -> "champ.import.result.status.success_insert";
+            case "SUCCESS_UPDATE" -> "champ.import.result.status.success_update";
+            case "WARNING_INSERT" -> "champ.import.result.status.warning_insert";
+            case "WARNING_UPDATE" -> "champ.import.result.status.warning_update";
+            case "WARNING" -> "champ.import.result.status.warning";
+            case "ERROR" -> "champ.import.result.status.error";
+            case "SUCCESS" -> "champ.import.result.status.success";
+            default -> statusCode;
+        };
+
+        if (key.equals(statusCode)) {
+            return statusCode;
+        }
+        String resolved = getMessage(key);
+        return key.equals(resolved) ? statusCode : resolved;
+    }
+
+    private record ColumnBinding(int index, String header) {
     }
 }

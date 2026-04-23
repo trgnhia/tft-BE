@@ -26,7 +26,7 @@ import java.util.List;
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
 public class Champ extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "set_id", nullable = false,
+    @JoinColumn(name = "set_id", nullable = true,
             foreignKey = @ForeignKey(name = "fk_champ_set"))
     private Sets sets;
 

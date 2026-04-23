@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.core.api.ApiResponse;
 import org.example.core.api.PageResponse;
 import org.example.dto.champs.BulkDeleteRequest;
+import org.example.dto.sets.SetOptionResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.services.SetsService;
@@ -32,6 +33,11 @@ public class SetsCmsController {
         return ResponseEntity.ok(
                 ApiResponse.success(setsService.getAllSet(page, size, keyword, deleted))
         );
+    }
+
+    @GetMapping("/options")
+    public ResponseEntity<ApiResponse<List<SetOptionResponse>>> getSetOptions() {
+        return ResponseEntity.ok(ApiResponse.success(setsService.getSetOptionsForCms()));
     }
 
 
