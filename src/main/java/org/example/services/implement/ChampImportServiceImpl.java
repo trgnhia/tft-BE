@@ -50,6 +50,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -226,7 +228,6 @@ public class ChampImportServiceImpl implements ChampImportService {
         validateCodeUniquenessInFile(normalizedCode, dto.getCode(), context);
 
         ResolvedSet resolvedSet = resolveSet(dto.getSetCode(), context);
-        List<Long> traitIds = resolveTraitIds(dto, resolvedSet.setId(), context);
 
         ExistingChampLookup existing = context.existingByCode().get(normalizedCode);
         if (existing != null) {
@@ -238,9 +239,12 @@ public class ChampImportServiceImpl implements ChampImportService {
                     )));
 
             validateSlugForUpdate(dto.getSlug(), champ.getId());
-            applyDtoToChamp(champ, dto, resolvedSet.set());
+            applyDtoToExistingChamp(champ, dto, resolvedSet.set());
             Champ saved = champRepository.save(champ);
-            syncChampTraits(saved, traitIds);
+            if (hasTraitInput(dto)) {
+                List<Long> traitIds = resolveTraitIds(dto, resolvedSet.setId(), context);
+                syncChampTraits(saved, traitIds);
+            }
 
             context.updatedCount().incrementAndGet();
             context.existingByCode().put(normalizedCode, new ExistingChampLookup(saved.getId(), false));
@@ -255,8 +259,9 @@ public class ChampImportServiceImpl implements ChampImportService {
         validateSlugForInsert(dto.getSlug());
 
         Champ champ = new Champ();
-        applyDtoToChamp(champ, dto, resolvedSet.set());
+        applyDtoToNewChamp(champ, dto, resolvedSet.set());
         Champ saved = champRepository.save(champ);
+        List<Long> traitIds = resolveTraitIds(dto, resolvedSet.setId(), context);
         syncChampTraits(saved, traitIds);
 
         context.insertedCount().incrementAndGet();
@@ -279,15 +284,89 @@ public class ChampImportServiceImpl implements ChampImportService {
         return new ImportRowOutcome(warningStatus, successMessage + ". " + warningMessage, false);
     }
 
-    private void applyDtoToChamp(Champ champ, ChampImportDto dto, Sets targetSet) {
+    private void applyDtoToNewChamp(Champ champ, ChampImportDto dto, Sets targetSet) {
+        applyRequiredDtoFields(champ, dto, targetSet);
+        champ.setImageUrl(normalizeImportedImageUrl(dto.getImageUrl()));
+    }
+
+    private void applyDtoToExistingChamp(Champ champ, ChampImportDto dto, Sets targetSet) {
+        applyRequiredDtoFields(champ, dto, targetSet);
+
+        String incomingImageUrl = normalizeImportedImageUrl(dto.getImageUrl());
+        if (StringUtils.hasText(incomingImageUrl)) {
+            champ.setImageUrl(incomingImageUrl);
+        }
+    }
+
+    private void applyRequiredDtoFields(Champ champ, ChampImportDto dto, Sets targetSet) {
         champ.setCode(trimOrNull(dto.getCode()));
         champ.setName(trimOrNull(dto.getName()));
         champ.setSlug(trimOrNull(dto.getSlug()));
         champ.setCost(dto.getCost());
-        champ.setImageUrl(trimOrNull(dto.getImageUrl()));
         champ.setStats(buildStats(dto));
         champ.setSets(targetSet);
         champ.setDeleted(false);
+    }
+
+    private boolean hasTraitInput(ChampImportDto dto) {
+        return StringUtils.hasText(dto.getTraitSlugs()) || StringUtils.hasText(dto.getTraitNames());
+    }
+
+    private String normalizeImportedImageUrl(String imageUrl) {
+        String trimmed = trimOrNull(imageUrl);
+        if (!StringUtils.hasText(trimmed)) {
+            return null;
+        }
+
+        String pathCandidate = trimmed;
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            try {
+                pathCandidate = new URI(trimmed).getPath();
+                String normalizedFromAbsolute = normalizeManagedUploadPathFromAbsolute(pathCandidate);
+                return normalizedFromAbsolute != null ? normalizedFromAbsolute : trimmed;
+            } catch (URISyntaxException ex) {
+                return trimmed;
+            }
+        }
+
+        String normalizedManagedPath = normalizeManagedUploadPath(pathCandidate);
+        return normalizedManagedPath != null ? normalizedManagedPath : trimmed;
+    }
+
+    private String normalizeManagedUploadPathFromAbsolute(String absolutePath) {
+        if (!StringUtils.hasText(absolutePath)) {
+            return null;
+        }
+        String normalized = absolutePath.trim().replace("\\", "/");
+        if (normalized.startsWith("/api/")) {
+            return normalizeManagedUploadPath(normalized);
+        }
+        return null;
+    }
+
+    private String normalizeManagedUploadPath(String rawPath) {
+        if (!StringUtils.hasText(rawPath)) {
+            return null;
+        }
+
+        String normalized = rawPath.trim().replace("\\", "/");
+        if (normalized.startsWith("uploads/")) {
+            return "/" + normalized;
+        }
+        if (normalized.startsWith("/uploads")) {
+            return normalized;
+        }
+
+        int uploadsIndex = normalized.indexOf("/uploads/");
+        if (uploadsIndex >= 0 && normalized.startsWith("/api/")) {
+            return normalized.substring(uploadsIndex);
+        }
+
+        if (normalized.endsWith("/uploads") && normalized.startsWith("/api/")) {
+            return "/uploads";
+        }
+
+        return null;
     }
 
     private ChampStats buildStats(ChampImportDto dto) {
