@@ -20,7 +20,9 @@ public interface UserService {
 
     UserDetailedResponse deleteUserById(Long userId);
 
-    UserDetailedResponse updateStatus(Long userId, UpdateAccountStatusRequest request);
+    UserDetailedResponse recoverUser(Long userId);
 
     UserInfoResponse getMyInfo(Long userId);
+
+    UserResponse resetUserPassword(Long userId, @Valid ResetUserPasswordRequest request);
 }

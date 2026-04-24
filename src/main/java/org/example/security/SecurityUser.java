@@ -31,7 +31,7 @@ public class SecurityUser implements UserDetails {
         this.id = user.getId();
         this.email = user.getEmail();
         this.username = user.getUsername();
-        this.enabled = user.isEnabled();
+        this.enabled = !user.isDeleted();
         this.lastLogoutAt = user.getLastLogoutAt();
         this.passwordHashed = user.getPasswordHash();
 

@@ -22,8 +22,6 @@ public class User extends BaseEntity {
     private String email;
     @Column(name = "password_hash")
     private String passwordHash;
-    @Column(name = "enabled")
-    private boolean enabled;
     @Column(name = "deleted")
     private boolean deleted;
     @Column(name = "last_logout_at")

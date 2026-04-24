@@ -32,11 +32,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
                 SELECT u FROM User u JOIN FETCH u.role r
                 WHERE u.deleted = false
-                AND (:userName IS NULL OR :userName = '' OR LOWER(u.username) LIKE LOWER(CONCAT('%', :userName, '%')))
+                AND (:username IS NULL OR :username = '' OR LOWER(u.username) LIKE LOWER(CONCAT('%', :username, '%')))
                 AND (:email IS NULL OR :email = '' OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
                 AND (:roleId IS NULL OR u.role.id = :roleId)
-                AND (:enable IS NULL OR u.enabled = :enable)
+                AND (:deleted IS NULL OR u.deleted = :deleted)
             """)
-    Page<User> findAllByFilter(@Param("userName") String userName, @Param("email") String email,
-                               @Param("roleId") Long roleId, @Param("enable") Boolean enable, Pageable pageable);
+    Page<User> findAllByFilter(@Param("username") String username, @Param("email") String email,
+                               @Param("roleId") Long roleId, @Param("deleted") Boolean deleted, Pageable pageable);
 }
