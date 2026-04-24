@@ -30,7 +30,6 @@ public class UserImportPersistenceServiceImpl implements UserImportPersistenceSe
         user.setEmail(dto.getEmail());
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         user.setRole(role);
-        user.setEnabled(Boolean.TRUE.equals(dto.getEnabled()));
         user.setDeleted(false);
 
         userRepository.save(user);

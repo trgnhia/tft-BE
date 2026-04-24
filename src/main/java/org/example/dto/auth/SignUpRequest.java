@@ -8,6 +8,6 @@ import org.example.annotations.PasswordsMatch;
 
 @Builder
 @PasswordsMatch
-public record SignUpRequest(@NonNull String userName, @NonNull @Email String email,
+public record SignUpRequest(@NonNull String username, @NonNull @Email String email,
                             @Password String password, String confirmPassword) {
 }
