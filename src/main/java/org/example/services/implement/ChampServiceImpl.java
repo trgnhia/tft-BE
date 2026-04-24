@@ -33,6 +33,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -129,6 +131,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         filterUtil.enableDeletedFilter();
         String resolvedCode = resolveTargetCode(request.getCode(), request.getSlug(), null, null);
         request.setCode(resolvedCode);
+        request.setImageUrl(normalizeMediaUrl(request.getImageUrl()));
 
         if (champRepository.existsBySlugIncludingDeleted(request.getSlug())) {
             throw new ConflictException(Constants.MessageKey.CHAMP_SLUG_EXISTS, request.getSlug());
@@ -387,7 +390,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
         }
         request.setCode(targetCode);
 
-        String oldImageUrl = champ.getImageUrl();
+        String oldImageUrl = normalizeMediaUrl(champ.getImageUrl());
 
         Long targetSetId = resolveTargetSetId(request, champ);
         Long currentSetId = champ.getSets() != null ? champ.getSets().getId() : null;
@@ -400,6 +403,7 @@ public class ChampServiceImpl extends BaseService implements ChampService {
             }
         }
 
+        request.setImageUrl(resolveUpdatedMediaUrl(request.getImageUrl(), oldImageUrl));
         champMapper.updateEntity(request, champ);
         syncChampTraits(champ, targetSetId, request.getTraitIds());
         deleteObsoleteManagedImage(oldImageUrl, champ.getImageUrl());
@@ -536,10 +540,90 @@ public class ChampServiceImpl extends BaseService implements ChampService {
     }
 
     private void deleteObsoleteManagedImage(String oldImageUrl, String newImageUrl) {
-        if (Objects.equals(oldImageUrl, newImageUrl) || !StringUtils.hasText(oldImageUrl)) {
+        String normalizedOld = normalizeMediaUrl(oldImageUrl);
+        String normalizedNew = normalizeMediaUrl(newImageUrl);
+        if (!StringUtils.hasText(normalizedOld) || Objects.equals(normalizedOld, normalizedNew)) {
             return;
         }
-        fileStorageService.deleteManagedImageIfExists(oldImageUrl);
+
+        if (isManagedImageStillReferenced(normalizedOld)) {
+            return;
+        }
+
+        fileStorageService.deleteManagedImageIfExists(normalizedOld);
+    }
+
+    private String resolveUpdatedMediaUrl(String requestedImageUrl, String currentImageUrl) {
+        if (!StringUtils.hasText(requestedImageUrl)) {
+            return currentImageUrl;
+        }
+        return normalizeMediaUrl(requestedImageUrl);
+    }
+
+    private String normalizeMediaUrl(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return null;
+        }
+
+        String trimmed = imageUrl.trim();
+        String pathCandidate = trimmed;
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            try {
+                pathCandidate = new URI(trimmed).getPath();
+                String normalizedFromAbsolute = normalizeManagedUploadPathFromAbsolute(pathCandidate);
+                return normalizedFromAbsolute != null ? normalizedFromAbsolute : trimmed;
+            } catch (URISyntaxException ex) {
+                return trimmed;
+            }
+        }
+
+        String normalizedManagedPath = normalizeManagedUploadPath(pathCandidate);
+        return normalizedManagedPath != null ? normalizedManagedPath : trimmed;
+    }
+
+    private String normalizeManagedUploadPathFromAbsolute(String absolutePath) {
+        if (!StringUtils.hasText(absolutePath)) {
+            return null;
+        }
+        String normalized = absolutePath.trim().replace("\\", "/");
+        if (normalized.startsWith("/api/")) {
+            return normalizeManagedUploadPath(normalized);
+        }
+        return null;
+    }
+
+    private String normalizeManagedUploadPath(String rawPath) {
+        if (!StringUtils.hasText(rawPath)) {
+            return null;
+        }
+
+        String normalized = rawPath.trim().replace("\\", "/");
+        if (normalized.startsWith("uploads/")) {
+            return "/" + normalized;
+        }
+        if (normalized.startsWith("/uploads")) {
+            return normalized;
+        }
+
+        int uploadsIndex = normalized.indexOf("/uploads/");
+        if (uploadsIndex >= 0 && normalized.startsWith("/api/")) {
+            return normalized.substring(uploadsIndex);
+        }
+
+        if (normalized.endsWith("/uploads") && normalized.startsWith("/api/")) {
+            return "/uploads";
+        }
+
+        return null;
+    }
+
+    private boolean isManagedImageStillReferenced(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return false;
+        }
+        long champReferences = champRepository.countByImageUrlIncludingDeleted(imageUrl);
+        long traitReferences = traitRepository.countByIconUrlIncludingDeleted(imageUrl);
+        return champReferences > 0 || traitReferences > 0;
     }
 
     private ChampResponse toResponse(Champ champ) {

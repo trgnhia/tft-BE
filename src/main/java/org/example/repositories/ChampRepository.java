@@ -84,6 +84,9 @@ public interface ChampRepository extends JpaRepository<Champ, Long>, JpaSpecific
     @Query(value = "select exists(select 1 from champs c where lower(c.code) = lower(:code) and c.id <> :id)", nativeQuery = true)
     boolean existsByCodeAndIdNotIncludingDeleted(@Param("code") String code, @Param("id") Long id);
 
+    @Query(value = "select count(*) from champs c where c.image_url = :imageUrl", nativeQuery = true)
+    long countByImageUrlIncludingDeleted(@Param("imageUrl") String imageUrl);
+
     @Query("""
             select c.id as champId,
                    c.deleted as champDeleted,

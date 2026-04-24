@@ -13,6 +13,7 @@ import org.example.dto.trait.*;
 import org.example.entities.Sets;
 import org.example.entities.trait.Trait;
 import org.example.mapper.TraitMapper;
+import org.example.repositories.ChampRepository;
 import org.example.repositories.SetsRepository;
 import org.example.repositories.TraitRepository;
 import org.example.repositories.spec.TraitSpecification;
@@ -25,7 +26,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +41,7 @@ import java.util.Objects;
 public class TraitServiceImpl extends BaseService implements TraitService {
 
     private final TraitRepository traitRepository;
+    private final ChampRepository champRepository;
     private final SetsRepository setsRepository;
     private final TraitMapper traitMapper;
     private final FileStorageService fileStorageService;
@@ -73,6 +78,7 @@ public class TraitServiceImpl extends BaseService implements TraitService {
     @Transactional
     public TraitResponse create(CreateTraitRequest request) {
         log.info("[TRAIT] Creating slug={}", request.getSlug());
+        request.setIconUrl(normalizeMediaUrl(request.getIconUrl()));
 
         if (traitRepository.existsBySlug(request.getSlug())) {
             log.warn("[TRAIT] Slug {} already exists", request.getSlug());
@@ -99,7 +105,8 @@ public class TraitServiceImpl extends BaseService implements TraitService {
     public TraitResponse update(Long id, UpdateTraitRequest request) {
         log.info("[TRAIT] Updating id={}", id);
         Trait trait = findActiveById(id);
-        String oldIconUrl = trait.getIconUrl();
+        String oldIconUrl = normalizeMediaUrl(trait.getIconUrl());
+        request.setIconUrl(resolveUpdatedMediaUrl(request.getIconUrl(), oldIconUrl));
         var setEntity = setsRepository.findById(request.getSetId())
                 .orElseThrow(() -> {
                     log.warn("[TRAIT] SetId {} not found during update", request.getSetId());
@@ -336,10 +343,90 @@ public class TraitServiceImpl extends BaseService implements TraitService {
     }
 
     private void deleteObsoleteManagedImage(String oldIconUrl, String newIconUrl) {
-        if (Objects.equals(oldIconUrl, newIconUrl) || !org.springframework.util.StringUtils.hasText(oldIconUrl)) {
+        String normalizedOld = normalizeMediaUrl(oldIconUrl);
+        String normalizedNew = normalizeMediaUrl(newIconUrl);
+        if (!StringUtils.hasText(normalizedOld) || Objects.equals(normalizedOld, normalizedNew)) {
             return;
         }
-        fileStorageService.deleteManagedImageIfExists(oldIconUrl);
+
+        if (isManagedImageStillReferenced(normalizedOld)) {
+            return;
+        }
+
+        fileStorageService.deleteManagedImageIfExists(normalizedOld);
+    }
+
+    private String resolveUpdatedMediaUrl(String requestedIconUrl, String currentIconUrl) {
+        if (!StringUtils.hasText(requestedIconUrl)) {
+            return currentIconUrl;
+        }
+        return normalizeMediaUrl(requestedIconUrl);
+    }
+
+    private String normalizeMediaUrl(String mediaUrl) {
+        if (!StringUtils.hasText(mediaUrl)) {
+            return null;
+        }
+
+        String trimmed = mediaUrl.trim();
+        String pathCandidate = trimmed;
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            try {
+                pathCandidate = new URI(trimmed).getPath();
+                String normalizedFromAbsolute = normalizeManagedUploadPathFromAbsolute(pathCandidate);
+                return normalizedFromAbsolute != null ? normalizedFromAbsolute : trimmed;
+            } catch (URISyntaxException ex) {
+                return trimmed;
+            }
+        }
+
+        String normalizedManagedPath = normalizeManagedUploadPath(pathCandidate);
+        return normalizedManagedPath != null ? normalizedManagedPath : trimmed;
+    }
+
+    private String normalizeManagedUploadPathFromAbsolute(String absolutePath) {
+        if (!StringUtils.hasText(absolutePath)) {
+            return null;
+        }
+        String normalized = absolutePath.trim().replace("\\", "/");
+        if (normalized.startsWith("/api/")) {
+            return normalizeManagedUploadPath(normalized);
+        }
+        return null;
+    }
+
+    private String normalizeManagedUploadPath(String rawPath) {
+        if (!StringUtils.hasText(rawPath)) {
+            return null;
+        }
+
+        String normalized = rawPath.trim().replace("\\", "/");
+        if (normalized.startsWith("uploads/")) {
+            return "/" + normalized;
+        }
+        if (normalized.startsWith("/uploads")) {
+            return normalized;
+        }
+
+        int uploadsIndex = normalized.indexOf("/uploads/");
+        if (uploadsIndex >= 0 && normalized.startsWith("/api/")) {
+            return normalized.substring(uploadsIndex);
+        }
+
+        if (normalized.endsWith("/uploads") && normalized.startsWith("/api/")) {
+            return "/uploads";
+        }
+
+        return null;
+    }
+
+    private boolean isManagedImageStillReferenced(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return false;
+        }
+        long champReferences = champRepository.countByImageUrlIncludingDeleted(imageUrl);
+        long traitReferences = traitRepository.countByIconUrlIncludingDeleted(imageUrl);
+        return champReferences > 0 || traitReferences > 0;
     }
 
     private TraitResponse toResponse(Trait trait) {

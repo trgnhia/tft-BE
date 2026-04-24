@@ -5,7 +5,6 @@ import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.DataException;
 import org.example.dto.upload.FileUploadResponse;
-import org.example.services.AssetUrlService;
 import org.example.services.FileStorageService;
 import org.example.util.MessageUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.List;
 import java.util.Set;
@@ -42,19 +42,18 @@ public class FileStorageServiceImpl implements FileStorageService {
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".jpg", ".jpeg", ".png", ".webp");
 
     private final Path uploadRootPath;
-    private final String publicUploadBaseUrl;
+    private final String publicUploadBasePath;
+    private final String legacyPublicUploadBasePath;
     private final long maxImageSizeBytes;
-    private final AssetUrlService assetUrlService;
 
     public FileStorageServiceImpl(
             @Value("${app.upload.dir:uploads}") String uploadDir,
             @Value("${server.servlet.context-path:}") String contextPath,
-            @Value("${app.upload.max-image-size-bytes:2097152}") long maxImageSizeBytes,
-            AssetUrlService assetUrlService) {
+            @Value("${app.upload.max-image-size-bytes:2097152}") long maxImageSizeBytes) {
         this.uploadRootPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-        this.publicUploadBaseUrl = normalizeContextPath(contextPath) + "/uploads";
+        this.publicUploadBasePath = "/uploads";
+        this.legacyPublicUploadBasePath = normalizeContextPath(contextPath) + "/uploads";
         this.maxImageSizeBytes = maxImageSizeBytes > 0 ? maxImageSizeBytes : DEFAULT_MAX_IMAGE_SIZE_BYTES;
-        this.assetUrlService = assetUrlService;
     }
 
     @Override
@@ -85,7 +84,7 @@ public class FileStorageServiceImpl implements FileStorageService {
 
         return FileUploadResponse.builder()
                 .fileName(storedFileName)
-                .url(assetUrlService.toPublicUrl(publicUploadBaseUrl + "/" + safeFolder + "/" + storedFileName))
+                .url(publicUploadBasePath + "/" + safeFolder + "/" + storedFileName)
                 .contentType(file.getContentType())
                 .size(file.getSize())
                 .build();
@@ -182,15 +181,10 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
 
         String normalizedUrl = extractPath(fileUrl.trim());
-        String expectedPrefix = publicUploadBaseUrl + "/";
-        if (!normalizedUrl.startsWith(expectedPrefix)) {
-            if (strict) {
-                throw invalidUploadParameter(Constants.MessageKey.UPLOAD_URL_INVALID);
-            }
+        String relativePath = extractManagedRelativePath(normalizedUrl, strict);
+        if (relativePath == null) {
             return null;
         }
-
-        String relativePath = normalizedUrl.substring(expectedPrefix.length());
         if (!StringUtils.hasText(relativePath)) {
             if (strict) {
                 throw invalidUploadParameter(Constants.MessageKey.UPLOAD_URL_INVALID);
@@ -206,6 +200,33 @@ public class FileStorageServiceImpl implements FileStorageService {
             return null;
         }
         return resolvedPath;
+    }
+
+    private String extractManagedRelativePath(String normalizedUrl, boolean strict) {
+        if (!StringUtils.hasText(normalizedUrl)) {
+            if (strict) {
+                throw invalidUploadParameter(Constants.MessageKey.UPLOAD_URL_INVALID);
+            }
+            return null;
+        }
+
+        String normalizedPath = normalizedUrl.replace("\\", "/").trim();
+        List<String> acceptedPrefixes = new ArrayList<>();
+        acceptedPrefixes.add(publicUploadBasePath + "/");
+        if (StringUtils.hasText(legacyPublicUploadBasePath)) {
+            acceptedPrefixes.add(legacyPublicUploadBasePath + "/");
+        }
+
+        for (String prefix : acceptedPrefixes) {
+            if (normalizedPath.startsWith(prefix)) {
+                return normalizedPath.substring(prefix.length());
+            }
+        }
+
+        if (strict) {
+            throw invalidUploadParameter(Constants.MessageKey.UPLOAD_URL_INVALID);
+        }
+        return null;
     }
 
     private String extractPath(String url) {

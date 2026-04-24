@@ -93,6 +93,9 @@ public interface TraitRepository extends JpaRepository<Trait, Long>, JpaSpecific
             """, nativeQuery = true)
     List<String> findDistinctTypesForCms();
 
+    @Query(value = "select count(*) from traits t where t.icon_url = :iconUrl", nativeQuery = true)
+    long countByIconUrlIncludingDeleted(@Param("iconUrl") String iconUrl);
+
     @Query(value = """
     SELECT t.* FROM traits t
     LEFT JOIN "set" s ON t.set_id = s.id
