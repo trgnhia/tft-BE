@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public PageResponse<UserResponse> getAllUser(UserFilter userFilter, Pageable pageable) {
-        var userPaged = userRepository.findAllByFilter(userFilter.username(), userFilter.email(), userFilter.roleId(), userFilter.enabled(), pageable)
+        var userPaged = userRepository.findAllByFilter(userFilter.username(), userFilter.email(), userFilter.roleId(), userFilter.deleted(), pageable)
                 .map(userMapper::toResponse);
         return PageResponse.from(userPaged);
     }
@@ -86,23 +86,31 @@ public class UserServiceImpl implements UserService {
     public UserDetailedResponse deleteUserById(Long userId) {
         User user = getOrThrowUser(userId);
         user.setDeleted(true);
-        user.setEnabled(false);
         var deleted = userRepository.save(user);
         return mapToUserDetailed(deleted);
     }
 
     @Override
-    public UserDetailedResponse updateStatus(Long userId, UpdateAccountStatusRequest request) {
+    public UserDetailedResponse recoverUser(Long userId) {
         User user = getOrThrowUser(userId);
-        user.setEnabled(request.enabled());
-        User saved = userRepository.save(user);
-        return mapToUserDetailed(saved);
+        user.setDeleted(false);
+        var recovered = userRepository.save(user);
+        return mapToUserDetailed(recovered);
     }
 
     @Override
     public UserInfoResponse getMyInfo(Long userId) {
         User user = getOrThrowUser(userId);
         return mapToUserInfo(user);
+    }
+
+    @Override
+    public UserResponse resetUserPassword(Long userId, ResetUserPasswordRequest request) {
+        User user = getOrThrowUser(userId);
+        String newPasswordHashed = passwordEncoder.encode(request.newPassword());
+        user.setPasswordHash(newPasswordHashed);
+        User saved = userRepository.save(user);
+        return userMapper.toResponse(saved);
     }
 
     private UserInfoResponse mapToUserInfo(User user) {
@@ -118,8 +126,7 @@ public class UserServiceImpl implements UserService {
         return UserDetailedResponse.builder()
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .enabled(user.isEnabled())
-                .deleted(user.isDeleted())
+                .enabled(user.isDeleted())
                 .createdDate(user.getCreatedAt())
                 .lastLogout(user.getLastLogoutAt())
                 .role(user.getRole().getCode())

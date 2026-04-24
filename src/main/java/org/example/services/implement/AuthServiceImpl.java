@@ -49,8 +49,7 @@ public class AuthServiceImpl implements AuthService {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.username(), request.password())
             );
-
-            // 2. Nếu code chạy xuống được đây nghĩa là thông tin hợp lệ. Lấy thông tin user ra.
+            
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             return buildToken(userDetails);
         } catch (AuthenticationException e) {
@@ -69,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void signUp(SignUpRequest request) {
-        userBusinessValidator.validateUserUniqueness(request.userName(), request.email());
+        userBusinessValidator.validateUserUniqueness(request.username(), request.email());
         User user = buildUser(request);
         userRepository.save(user);
     }
@@ -78,11 +77,10 @@ public class AuthServiceImpl implements AuthService {
         Role defaultRole = roleRepository.findByCode("USER")
                 .orElseThrow(() -> new ServerException(ErrorCode.SERVICE_UNAVAILABLE));
         User user = new User();
-        user.setUsername(request.userName());
+        user.setUsername(request.username());
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(defaultRole);
-        user.setEnabled(true);
         return user;
     }
 

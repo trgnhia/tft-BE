@@ -91,10 +91,17 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(deleted));
     }
 
-    @PatchMapping("/{userId}/status")
+    @PatchMapping("/{userId}/recover")
     @RequirePermission(resource = RESOURCE.USER, permission = PERMISSION.UPDATE)
-    public ResponseEntity<ApiResponse<UserDetailedResponse>> updateStatus(@PathVariable Long userId, @RequestBody @Valid UpdateAccountStatusRequest request) {
-        var result = userService.updateStatus(userId, request);
+    public ResponseEntity<ApiResponse<UserDetailedResponse>> recoverUser(@PathVariable Long userId) {
+        var result = userService.recoverUser(userId);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PatchMapping("/{userId}/reset-password")
+    @RequirePermission(resource = RESOURCE.USER, permission = PERMISSION.UPDATE)
+    public ResponseEntity<ApiResponse<Object>> resetUserPassword(@PathVariable Long userId, @RequestBody @Valid ResetUserPasswordRequest request) {
+        var result = userService.resetUserPassword(userId, request);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
