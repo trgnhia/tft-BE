@@ -1,5 +1,6 @@
 package org.example.imports.strategy;
 
+import org.example.imports.model.ImportRowReport;
 import org.example.imports.model.ParsedImportFile;
 
 import java.io.IOException;
@@ -11,7 +12,7 @@ public interface ImportFileStrategy {
 
     ParsedImportFile parse(InputStream inputStream) throws IOException;
 
-    byte[] buildErrorFile(ParsedImportFile parsedFile, Map<Long, String> errorsByRowNumber) throws IOException;
+    byte[] buildResultFile(ParsedImportFile parsedFile, Map<Long, ImportRowReport> rowReportsByRowNumber) throws IOException;
 
     String outputContentType();
 

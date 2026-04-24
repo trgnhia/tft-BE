@@ -21,6 +21,7 @@ public class ChampResponse {
     private String setsName;
     private Boolean setDeleted;
     private String slug;
+    private String code;
     private String name;
     private String imageUrl;
     private List<ChampTraitResponse> traits;

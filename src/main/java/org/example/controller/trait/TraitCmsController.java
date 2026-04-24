@@ -90,6 +90,13 @@ public class TraitCmsController {
         return ApiResponse.success(traitService.getForDropdown(setId));
     }
 
+    @GetMapping("/types")
+    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN')")
+    public ApiResponse<List<String>> getTypes() {
+        log.info("[GET] /cms/traits/types");
+        return ApiResponse.success(traitService.getAvailableTypes());
+    }
+
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<TraitResponse>> getAllAdmin(

@@ -23,6 +23,7 @@ public interface TraitService {
     void bulkDelete(BulkDeleteRequest request);
     PageResponse<TraitResponse> search(TraitFilterRequest filter, Pageable pageable);
     List<TraitResponse> getForDropdown(Long setId);
+    List<String> getAvailableTypes();
     List<TraitResponse> getBySetId(Long setId);
     List<TraitResponse> getAllSortedByNameAsc(Long setId);
     PageResponse<TraitResponse> getAllAdmin(String keyword, Pageable pageable);
