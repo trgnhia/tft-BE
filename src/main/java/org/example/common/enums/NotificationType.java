@@ -9,6 +9,7 @@ public enum NotificationType {
     TRAIT_UPDATED,
     SET_CREATED,
     SET_UPDATED,
+    SET_DELETED,
     TEAM_COMP_CREATED,
     TEAM_COMP_UPDATED,
     SYSTEM_NOTIFICATION

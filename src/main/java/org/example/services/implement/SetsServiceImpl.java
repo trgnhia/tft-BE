@@ -1,23 +1,23 @@
 package org.example.services.implement;
+
 import lombok.RequiredArgsConstructor;
 import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
-import org.example.common.enums.NotificationTargetType;
-import org.example.common.enums.NotificationType;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
 import org.example.common.exception.ResourceNotFoundException;
 import org.example.core.api.PageResponse;
-import org.example.dto.notification.NotificationCreateCommand;
 import org.example.dto.sets.SetOptionResponse;
 import org.example.dto.sets.SetsRequest;
 import org.example.dto.sets.SetsResponse;
 import org.example.entities.Sets;
+import org.example.events.sets.SetChangedEvent;
 import org.example.mapper.SetsMapper;
 import org.example.repositories.SetsRepository;
-import org.example.services.NotificationService;
 import org.example.services.SetsService;
 import org.example.util.MessageUtils;
+import org.example.util.SecurityUtil;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +37,8 @@ public class SetsServiceImpl implements SetsService {
 
     private final SetsRepository setRepo;
     private final SetsMapper setsMapper;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final SecurityUtil securityUtil;
 
     // ---------- PUBLIC SERVICES ----------
     @Override
@@ -96,16 +97,15 @@ public class SetsServiceImpl implements SetsService {
         sets.setCode(generateUniqueSetCode(normalizedName, null));
         Sets savedSets = setRepo.save(sets);
 
-        notificationService.createAndBroadcast(
-                NotificationCreateCommand.builder()
-                        .type(NotificationType.SET_CREATED)
-                        .title("Tạo mùa giải mới")
-                        .content("Set " + savedSets.getName() + " vừa được tạo")
-                        .targetType(NotificationTargetType.SETS)
-                        .targetId(savedSets.getId())
-                        .createdBy(1L)
-                        .build()
+        applicationEventPublisher.publishEvent(
+                new SetChangedEvent(
+                        savedSets.getId(),
+                        savedSets.getName(),
+                        resolveCurrentUserId(),
+                        SetChangedEvent.Action.CREATED
+                )
         );
+
         return setsMapper.toSetsResponse(savedSets);
     }
 
@@ -124,8 +124,17 @@ public class SetsServiceImpl implements SetsService {
         }
 
         Sets updatedSet = setRepo.save(existingSet);
+        applicationEventPublisher.publishEvent(
+                new SetChangedEvent(
+                        updatedSet.getId(),
+                        updatedSet.getName(),
+                        resolveCurrentUserId(),
+                        SetChangedEvent.Action.UPDATED
+                )
+        );
         return setsMapper.toSetsResponse(updatedSet);
     }
+
     @Override
     @Transactional
     public void delete(Long id) {
@@ -140,6 +149,14 @@ public class SetsServiceImpl implements SetsService {
         }
         sets.setDeleted(true);
         setRepo.save(sets);
+        applicationEventPublisher.publishEvent(
+                new SetChangedEvent(
+                        sets.getId(),
+                        sets.getName(),
+                        resolveCurrentUserId(),
+                        SetChangedEvent.Action.DELETED
+                )
+        );
     }
 
     @Override
@@ -239,5 +256,11 @@ public class SetsServiceImpl implements SetsService {
                 .code(set.getCode())
                 .name(set.getName())
                 .build();
+    }
+
+    private Long resolveCurrentUserId() {
+        return securityUtil.getCurrentUser()
+                .map(user -> user.getId())
+                .orElse(1L);
     }
 }
