@@ -40,7 +40,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = extractTokenFromCookie(request);
-
+        // Fallback: Try to find token from bearer header
+        if (token == null || token.isBlank()) {
+            token = extractTokenFromHeader(request);
+        }
         try {
             if (isValidToken(token)) {
                 authenticateUser(request, token);
@@ -52,6 +55,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String extractTokenFromHeader(HttpServletRequest request) {
+        String authorizationHeaderValue = request.getHeader("Authorization");
+        if (authorizationHeaderValue != null && authorizationHeaderValue.startsWith("Bearer")) {
+            return authorizationHeaderValue.substring(7);
+        }
+        return null;
     }
 
     private void authenticateUser(HttpServletRequest request, String token) {
@@ -66,22 +77,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isValidToken(String token) {
-        boolean valid = token != null && jwtUtil.isValidToken(token);
-        System.out.println("DEBUG: Token string exists: " + (token != null));
-        System.out.println("DEBUG: JwtUtil.isValidToken returns: " + valid);
-        return valid;
+        return token != null && jwtUtil.isValidToken(token);
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {
         if (request.getCookies() == null) {
-            System.out.println("DEBUG: No cookies found in request!");
             return null;
         }
         String cookieName = securityProperties.getAccessTokenCookie();
-        System.out.println("DEBUG: Searching for cookie name: " + cookieName);
 
         return Arrays.stream(request.getCookies())
-                .peek(c -> System.out.println("DEBUG: Found cookie: " + c.getName()))
                 .filter(c -> c.getName().equals(cookieName))
                 .map(Cookie::getValue)
                 .findFirst()

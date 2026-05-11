@@ -43,10 +43,12 @@ public class SecurityConfig {
             "/api/v1/uploads/**",
             "/ws/**",
             "/ws",
-
             "/auth/signin",
             "/auth/signup",
             "/auth/refresh",
+            "/auth2/signin",
+            "/auth2/signup",
+            "/auth2/refresh",
             "/swagger-resources",
             "/swagger-resources/**",
             "/swagger-ui/**",

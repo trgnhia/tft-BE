@@ -3,6 +3,7 @@ package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.DataException;
+import org.example.common.exception.ServerException;
 import org.example.core.api.PageResponse;
 import org.example.dto.user.*;
 import org.example.entities.Permission;
@@ -11,6 +12,7 @@ import org.example.entities.User;
 import org.example.mapper.UserMapper;
 import org.example.repositories.RoleRepository;
 import org.example.repositories.UserRepository;
+import org.example.services.BaseService;
 import org.example.services.UserService;
 import org.example.validators.UserBusinessValidator;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +24,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl extends BaseService implements UserService {
     private final UserRepository userRepository;
     private final UserBusinessValidator userBusinessValidator;
     private final RoleRepository roleRepository;
@@ -84,6 +86,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDetailedResponse deleteUserById(Long userId) {
+        Long currentUserId = getCurrentUserIdOrThrow();
+        if (currentUserId.equals(userId)) {
+            throw new ServerException(ErrorCode.DELETE_OWN_ACCOUNT);
+        }
         User user = getOrThrowUser(userId);
         user.setDeleted(true);
         var deleted = userRepository.save(user);
@@ -111,6 +117,17 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(newPasswordHashed);
         User saved = userRepository.save(user);
         return userMapper.toResponse(saved);
+    }
+
+    @Override
+    public UserResponse changePassword(Long userId, ChangePasswordRequest request) {
+        User user = getOrThrowUser(userId);
+        boolean isOldPasswordMatch = passwordEncoder.matches(request.oldPassword(), user.getPasswordHash());
+        if (!isOldPasswordMatch) throw new ServerException(ErrorCode.PASSWORD_INCORRECT);
+        String newPassHashed = passwordEncoder.encode(request.newPassword());
+        user.setPasswordHash(newPassHashed);
+        var updated = userRepository.save(user);
+        return userMapper.toResponse(updated);
     }
 
     private UserInfoResponse mapToUserInfo(User user) {

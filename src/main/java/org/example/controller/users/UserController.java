@@ -1,4 +1,4 @@
-package org.example.controller;
+package org.example.controller.users;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +102,14 @@ public class UserController {
     @RequirePermission(resource = RESOURCE.USER, permission = PERMISSION.UPDATE)
     public ResponseEntity<ApiResponse<Object>> resetUserPassword(@PathVariable Long userId, @RequestBody @Valid ResetUserPasswordRequest request) {
         var result = userService.resetUserPassword(userId, request);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Object>> changePassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Valid ChangePasswordRequest request) {
+        var userId = securityUser.getId();
+        var result = userService.changePassword(userId, request);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 

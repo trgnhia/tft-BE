@@ -1,4 +1,4 @@
-package org.example.controller;
+package org.example.controller.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
