@@ -25,4 +25,6 @@ public interface UserService {
     UserInfoResponse getMyInfo(Long userId);
 
     UserResponse resetUserPassword(Long userId, @Valid ResetUserPasswordRequest request);
+
+    UserResponse changePassword(Long userId, @Valid ChangePasswordRequest request);
 }

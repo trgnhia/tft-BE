@@ -27,6 +27,7 @@ public enum ErrorCode {
     MISSING_TOKEN("3009"),
     DELETE_BASIC_ROLE("3010"),
     UPDATE_ADMIN_ROLE("3011"),
+    DELETE_OWN_ACCOUNT("3012"),
 
     // Error system: 4xxx
     UNEXPECTED_ERROR("4000"),

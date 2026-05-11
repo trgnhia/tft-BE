@@ -3,23 +3,21 @@ package org.example.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.example.annotations.PasswordsMatch;
-import org.example.dto.auth.SignUpRequest;
 
-public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMatch, SignUpRequest> {
+public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMatch, PasswordMatchable> {
 
     @Override
-    public boolean isValid(SignUpRequest request, ConstraintValidatorContext context) {
-        if (request.password() == null || request.confirmPassword() == null) {
+    public boolean isValid(PasswordMatchable request, ConstraintValidatorContext context) {
+        if (request.getPasswordToMatch() == null || request.getConfirmPasswordToMatch() == null) {
             return false;
         }
 
-        boolean isValid = request.password().equals(request.confirmPassword());
+        boolean isValid = request.getPasswordToMatch().equals(request.getConfirmPasswordToMatch());
 
-        // Custom lại để lỗi hiển thị trực tiếp ở field "confirmPassword" thay vì lỗi chung của class
         if (!isValid) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(context.getDefaultConstraintMessageTemplate())
-                    .addPropertyNode("confirmPassword")
+                    .addPropertyNode(request.getConfirmFieldName())
                     .addConstraintViolation();
         }
 
