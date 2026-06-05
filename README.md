@@ -1,64 +1,71 @@
-# Phân tích dự án & Document về luồng WebSocket
+# TFT CMS Backend
 
-Dự án hiện tại là một ứng dụng Spring Boot phục vụ cho hệ thống CMS. 
+Dự án là backend Spring Boot cho hệ thống quản lý dữ liệu Teamfight Tactics (TFT). Ứng dụng cung cấp API public để frontend đọc dữ liệu game và API CMS để quản trị nội dung, người dùng, phân quyền, upload tài nguyên, import dữ liệu và giao tiếp realtime.
 
-## 1. Hiện trạng dự án - Kiến trúc & Luồng xử lý
-- **Framework & Công nghệ**: Spring Boot, Spring Data JPA, Lombok, Websocket (STOMP). Cấu trúc dự án tuân theo mô hình Controller - Service - Repository.
-- **WebSocket Config**: Cấu hình tại `WebSocketConfig.java`, public endpoint ở `/ws`, sử dụng cấu hình STOMP với application prefix `/app` (thường dùng cho FE gọi lên) và broker prefix `/topic` (broadcast), `/queue` (point-to-point / user2user private message).
-- **Tính năng Notification (Hiện tại)**: Đang được xây dựng dưới dạng broadcast cho toàn bộ các thiết bị đang kết nối CMS. Tại `NotificationServiceImpl.java`, khi có thông báo mới, hệ thống sẽ lưu Data và gọi API qua `SimpMessagingTemplate.convertAndSend("/topic/cms-notifications", response)` để bắn tín hiệu tới tất cả client Frontend đang subscribe tới channel này. 
+## Tính năng chính
 
-## 2. Luồng xử lý (Dự kiến) - Chat 1-1 giữa account CMS
+### Quản lý dữ liệu TFT
 
-Dựa trên cấu hình Spring Websocket mặc định có sẵn và các Table dự kiến, mô hình hoạt động của ứng dụng Chat 1-1 sẽ diễn ra như sau:
+- Quản lý mùa/phiên bản game (sets), bao gồm danh sách public, danh sách CMS, tạo mới, cập nhật và xóa mềm.
+- Quản lý tướng (champions) theo set, gồm thông tin cơ bản, cost, slug, mã định danh, ảnh, chỉ số JSON và liên kết hệ/tộc.
+- Quản lý hệ/tộc (traits), gồm tên, slug, loại trait, icon, mô tả, breakpoint JSON và dữ liệu theo từng set.
+- Quản lý trang bị (items), gồm ảnh, mô tả, tier, chỉ số và hiệu ứng lưu dạng JSON.
+- Quản lý đội hình (team comps), gồm tên, slug, style, tier, set liên quan và danh sách tướng trong đội hình.
+- Quản lý gợi ý trang bị cho từng tướng, hỗ trợ thứ tự ưu tiên và dữ liệu public/CMS riêng.
 
-### Database Design (Dự kiến)
-**1. Bảng `conversations`**
-Chứa thông tin quản lý cơ bản một phiên chat.
-- `id`: Primary Key
-- `created_at`: Thời gian bắt đầu
-- `updated_at`: Cập nhật khi có tin nhắn mới
+### API public và API CMS
 
-**2. Bảng `conversation_participants`**
-Quản lý user tham gia vào chat 1-1. Thực chất với chat 1-1 sẽ có 2 participants tương ứng 1 conversation_id.
-- `id`: Primary Key
-- `conversation_id`: Ngoại kiểm xuất phát từ bảng `conversations`
-- `user_id`: ID của User trong CMS
-- `joined_at`: Thời điểm join
+- API public phục vụ người dùng cuối đọc dữ liệu đã publish như champions, traits, items, sets và team comps.
+- API CMS phục vụ quản trị viên thao tác dữ liệu: tạo, cập nhật, xóa mềm, khôi phục, xóa hàng loạt, tìm kiếm, lọc và phân trang.
+- Một số module có endpoint thống kê tổng quan để hỗ trợ dashboard CMS.
 
-**3. Bảng `messages`**
-Lưu trữ toàn bộ nội dung trong lịch sử tin nhắn.
-- `id`: Primary Key
-- `conversation_id`: Trỏ khóa về `conversations.id`
-- `sender_id`: Khóa ngoại về bảng `users.id` gốc (người gửi)
-- `content`: Nội dung chat
-- `is_read`: Boolean check tin nhắn đã xem chưa
-- `created_at`: Log thời gian bắn tin
+### Xác thực và phân quyền
 
-### Luồng WebSocket STOMP (Flow Chat)
+- Hỗ trợ đăng ký, đăng nhập, refresh token và logout bằng JWT.
+- Hỗ trợ lưu access token/refresh token qua cookie ở nhóm API `auth2`.
+- Quản lý người dùng CMS: tạo user, cập nhật hồ sơ, đổi mật khẩu, reset mật khẩu, gán role, xóa mềm và khôi phục.
+- Quản lý role và permission theo mô hình RBAC.
+- Kiểm tra quyền bằng annotation `@RequirePermission`; role admin được bỏ qua kiểm tra chi tiết, các role khác cần đúng quyền theo resource/action.
 
-#### Bước 1: Khởi tạo kết nối & Subscribe (Client Side)
-- Sau khi khởi động FE CMS, **User A** và **User B** sẽ kết nối với Websocket ở đường dẫn `/ws`.
-- Mỗi Frontend phải tự động subscribe 2 địa chỉ chính:
-  1. `/topic/cms-notifications`: Dành cho Notification dùng chung.
-  2. `/user/queue/messages`: Dành cho tin nhắn cá nhân riêng tư. (User Destination Prefix của server đang để là `/user`).
+### Import, upload và quản trị tài nguyên
 
-#### Bước 2: Trigger gửi tin nhắn (User A -> User B)
-- Khi **User A** ở Frontend chat riêng cho **User B**. Client A sẽ đóng gói payload (Sender, Receiver, Message, v.v...) dạng JSON và STOMP send thẳng lên WebSocket controller của Server với config:
-  - **Path**: `/app/chat.send`
+- Hỗ trợ import champion từ file CSV/Excel, có xử lý header, validate từng dòng, trả kết quả lỗi theo dòng và hỗ trợ tải file template.
+- Hỗ trợ import user qua file upload.
+- Hỗ trợ upload/xóa ảnh cho champion và icon cho trait.
+- File upload được lưu theo thư mục cấu hình và chuyển đổi thành public URL để frontend sử dụng.
 
-#### Bước 3: Backend xử lý (`ChatController`)
-- Một class Spring Controller tại phía Backend (có gắn `@MessageMapping("/chat.send")`) bắt sự kiện truyền dữ liệu của **User A**.
-- **Xử lý DB Service**: 
-  - Validation check.
-  - Insert dòng Data mới tạo vào table `messages`.
-  - Cập nhật dòng `updated_at` trong bảng `conversations`.
-- **Đẩy dữ liệu Websocket lại**:
-  - Gọi method: `simpMessagingTemplate.convertAndSendToUser(userB_Identify, "/queue/messages", payload)`
-  - *Lưu ý thiết kế*: `userB_Identify` phải là thuộc tính định danh User (ví dụ như mã ID dạng string hay username string định ra ở Spring Security Principal) giúp hệ thống khoanh vùng được chính xác user. Broker tự sinh ra endpoint `/user/{userB_Identify}/queue/messages` dành riệng cho User B.
+### Chat và thông báo realtime
 
-#### Bước 4: Nhận tin nhắn (User B)
-- Nhờ cơ chế nhận dạng trong STOMP Spring, event này sẽ map chính xác session được khởi tạo bởi **User B**.
-- **User B** (đang Subscribe ở `/user/queue/messages`) nhận được Payload tin nhắn, thực hiện render UI append đoạn chat mới ra màn hình.
+- Cấu hình WebSocket STOMP tại endpoint `/ws`.
+- Client gửi message qua prefix `/app`, server broadcast qua `/topic` và gửi message riêng qua `/user/queue`.
+- Hỗ trợ chat 1-1 giữa user CMS, gồm conversation, participant và message.
+- Hỗ trợ REST API để lấy danh sách cuộc trò chuyện và lịch sử tin nhắn.
+- Hỗ trợ notification realtime cho CMS qua WebSocket, đồng thời lưu notification vào database.
 
-### Kết Luận
-Việc hệ thống tận dụng Spring Websocket theo hình mẫu này sẽ quản lý chặt chẽ được `Channel` cho Notification Broadcast và `User Private Channel` cho tính năng nhắn tin cá nhân. Thậm chí nếu có thiết kế Group Chat nâng cao thì vẫn có thể dùng thêm endpoint `/topic/...` linh hoạt mà không sợ nhiễu traffic.
+### Logging, audit và hạ tầng
+
+- Ghi log thao tác CMS qua interceptor/filter, lưu endpoint, method, username, IP, body request, trạng thái xử lý, lỗi và thời gian thực thi.
+- Các entity chính có hỗ trợ audit như created/updated/deleted và created_by/updated_by tùy module.
+- Sử dụng Flyway để quản lý migration PostgreSQL.
+- Chuẩn hóa response API bằng `ApiResponse` và `PageResponse`.
+- Có global exception handler cho REST API và WebSocket.
+- Hỗ trợ i18n message tiếng Việt/tiếng Anh.
+
+## Công nghệ sử dụng
+
+- Java 17
+- Spring Boot 3
+- Spring Web, Spring Security, Spring Data JPA, Spring WebSocket, Spring AOP
+- PostgreSQL
+- Flyway
+- JWT
+- Lombok
+- MapStruct
+- Apache POI và Apache Commons CSV
+- Springdoc OpenAPI/Swagger UI
+
+## Tổng quan kiến trúc
+
+Dự án được tổ chức theo mô hình nhiều lớp:
+
+- `controller![img.png](img.png)
