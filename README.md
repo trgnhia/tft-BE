@@ -61,11 +61,6 @@ Dự án là backend Spring Boot cho hệ thống quản lý dữ liệu Teamfig
 - JWT
 - Lombok
 - MapStruct
+- Redis
 - Apache POI và Apache Commons CSV
 - Springdoc OpenAPI/Swagger UI
-
-## Tổng quan kiến trúc
-
-Dự án được tổ chức theo mô hình nhiều lớp:
-
-- `controller![img.png](img.png)
