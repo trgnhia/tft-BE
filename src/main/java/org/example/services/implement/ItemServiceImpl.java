@@ -3,6 +3,7 @@ package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
 
 import org.example.common.constant.Constants;
+import org.example.common.constant.CacheNames;
 import org.example.common.enums.ErrorCode;
 import org.example.common.exception.ConflictException;
 import org.example.common.exception.DataException;
@@ -19,6 +20,9 @@ import org.example.repositories.SetsRepository;
 import org.example.repositories.spec.ItemSpecification;
 import org.example.services.ItemService;
 import org.example.util.MessageUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -44,6 +48,7 @@ public class ItemServiceImpl implements ItemService {
     // ---------- PUBLIC SERVICES ----------
 
     @Override
+    @Cacheable(cacheNames = CacheNames.PUBLIC_ITEMS, key = "'published:all'")
     public List<ItemResponse> getAllPublishedItem() {
         return itemRepo.findAllPublishedWithSets().stream()
                 .map(itemMapper::toItemResponse)
@@ -51,6 +56,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, key = "'id:' + #id")
     public ItemResponse getActiveItemById(Long id) {
         Item item = itemRepo.findPublishedById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -62,6 +68,10 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = CacheNames.PUBLIC_ITEMS,
+            key = "T(org.example.util.CacheKeyUtils).publishedItemsKey(#page, #size, #keyword, #setId, #tier, #sortBy, #sortDir)"
+    )
     public PageResponse<ItemResponse> getPublishedItems(int page,
                                                         int size,
                                                         String keyword,
@@ -151,6 +161,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public ItemResponse create(ItemRequest request) {
         Item item = itemMapper.toEntity(request);
         String normalizedName = normalizeName(request.getName());
@@ -169,6 +183,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public ItemResponse update(Long id, ItemRequest request) {
         Item item = getById(id);
         String normalizedName = normalizeName(request.getName());
@@ -190,6 +208,10 @@ public class ItemServiceImpl implements ItemService {
     }
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public void delete(Long id) {
         Item item = getById(id);
         if (item.isDeleted()) {
@@ -207,6 +229,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public void deleteMany(List<Long> ids) {
 
         List<Item> items = itemRepo.findAllByIdInAndDeletedFalse(ids);
@@ -227,6 +253,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public ItemResponse restore(Long id) {
         Item item = itemRepo.findRestorableById(id)
                 .orElseThrow(() -> new DataException(
@@ -242,6 +272,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public void restoreMany(List<Long> ids) {
         List<Item> items = itemRepo.findAllRestorableByIds(ids);
 

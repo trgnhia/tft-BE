@@ -1,5 +1,6 @@
 package org.example.services.implement;
 import lombok.RequiredArgsConstructor;
+import org.example.common.constant.CacheNames;
 import org.example.common.constant.Constants;
 import org.example.common.enums.ErrorCode;
 import org.example.common.enums.NotificationTargetType;
@@ -18,6 +19,9 @@ import org.example.repositories.SetsRepository;
 import org.example.services.NotificationService;
 import org.example.services.SetsService;
 import org.example.util.MessageUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,12 +45,14 @@ public class SetsServiceImpl implements SetsService {
 
     // ---------- PUBLIC SERVICES ----------
     @Override
+    @Cacheable(cacheNames = CacheNames.PUBLIC_SETS, key = "'published:all'")
     public List<SetsResponse> getAllPublishedSet() {
         List<Sets> sets = setRepo.findAllByDeletedFalse();
         return setsMapper.toListSetsResponse(sets);
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.PUBLIC_SETS, key = "'options:public'")
     public List<SetOptionResponse> getSetOptions() {
         return setRepo.findAllByDeletedFalseOrderByNameAsc().stream()
                 .map(this::toSetOption)
@@ -86,6 +92,12 @@ public class SetsServiceImpl implements SetsService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SETS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SET_DETAIL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public SetsResponse create(SetsRequest request) {
         String normalizedName = normalizeName(request.getName());
 
@@ -111,6 +123,12 @@ public class SetsServiceImpl implements SetsService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SETS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SET_DETAIL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public SetsResponse update(Long id, SetsRequest request) {
         Sets existingSet = getById(id);
         String normalizedName = normalizeName(request.getName());
@@ -128,6 +146,12 @@ public class SetsServiceImpl implements SetsService {
     }
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SETS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SET_DETAIL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public void delete(Long id) {
         Sets sets = getById(id);
         if (sets.isDeleted()) {
@@ -144,6 +168,12 @@ public class SetsServiceImpl implements SetsService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SETS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_SET_DETAIL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEMS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PUBLIC_ITEM_DETAIL, allEntries = true)
+    })
     public void deletedMany(List<Long> ids) {
         List<Sets> setsList = setRepo.findAllByIdInAndDeletedFalse(ids);
 
